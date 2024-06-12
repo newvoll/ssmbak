@@ -6,7 +6,13 @@ import re
 import sys
 import time
 
+from pathlib import Path
+
 import boto3
+from cfn_flip import load_yaml, dump_yaml
+
+
+from ssmbak.cli import helpers
 
 logger = logging.getLogger(__name__)
 
@@ -25,11 +31,6 @@ class Stack:
 
     def __repr__(self):
         return f"{self.__class__.__name__} {self.name} ({self.region})"
-
-    def _slurp(self, filename):
-        with open(filename, encoding="utf-8") as x:
-            f = x.read()
-        return f
 
     @property
     def bucketname(self):
@@ -85,11 +86,18 @@ class Stack:
             {"ParameterKey": name, "ParameterValue": value}
             for name, value in params.items()
         ]
+
+        template = load_yaml(helpers.slurp(template_file))
+        template["Resources"]["Function"]["Properties"]["Code"]["ZipFile"] = helpers.slurp(
+            f"{Path(__file__).parent.parent}/backup/ssmbak.py"
+        )
+        template_body = dump_yaml(template)
         kwargs = {
             "StackName": self.name,
+            "OnFailure": "DELETE",
             "Parameters": parameters,
             "Capabilities": ["CAPABILITY_NAMED_IAM"],
-            "TemplateBody": self._slurp(template_file),
+            "TemplateBody": template_body,
         }
         return kwargs
 

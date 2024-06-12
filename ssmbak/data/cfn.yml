@@ -99,15 +99,17 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Timeout: 30
+      Runtime: python3.10
       Code:
-        ImageUri: !Sub "public.ecr.aws/u6y3i3v0/ssmbak:${Version}"
+        ZipFile: REPLACEME
       Environment:
         Variables:
-          Stack: !Ref "AWS::StackName"
+          Stack: !Ref AWS::StackName
           SSMBAK_BUCKET: !Ref Bucket
           LOGLEVEL: !Ref LogLevel
       MemorySize: 128
-      PackageType: Image
+      PackageType: Zip
+      Handler: index.handler
       Role: !GetAtt FunctionRole.Arn
 
   FunctionRole:
