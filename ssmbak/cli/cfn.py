@@ -9,7 +9,6 @@ import time
 from pathlib import Path
 
 import boto3
-import yaml
 from cfn_flip import load_yaml, dump_yaml
 
 
@@ -88,8 +87,8 @@ class Stack:
             for name, value in params.items()
         ]
 
-        template = load_yaml(helpers._slurp(template_file))
-        template["Resources"]["Function"]["Properties"]["Code"]["ZipFile"] = helpers._slurp(
+        template = load_yaml(helpers.slurp(template_file))
+        template["Resources"]["Function"]["Properties"]["Code"]["ZipFile"] = helpers.slurp(
             f"{Path(__file__).parent.parent}/backup/ssmbak.py"
         )
         template_body = dump_yaml(template)

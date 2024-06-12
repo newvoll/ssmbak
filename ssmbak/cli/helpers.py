@@ -10,7 +10,8 @@ import yaml
 logger = logging.getLogger(__name__)
 
 
-def _slurp(filename):
+def slurp(filename):
+    """Suck a file into a str."""
     with open(filename, encoding="utf-8") as x:
         f = x.read()
     return f
@@ -36,7 +37,7 @@ def sort_bucket(bucketname, region):
         template_dir = Path(__file__).parent.parent
         template_file = f"{template_dir}/data/cfn.yml"
         yaml.add_multi_constructor("", _any_constructor, Loader=yaml.SafeLoader)
-        template = yaml.safe_load(_slurp(template_file))
+        template = yaml.safe_load(slurp(template_file))
         key = template["Resources"]["BucketParam"]["Properties"]["Name"]
         ssm = boto3.client(
             "ssm", endpoint_url=os.getenv("AWS_ENDPOINT"), region_name=region
