@@ -32,8 +32,6 @@ jobs:
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-root
-      - name: Install project
-        run: poetry install --no-interaction
 
       # Can't figure out how to cache localstack's image
       - name: Bring up localstack and Lambda
