@@ -1,0 +1,42 @@
+[tool.poetry]
+name = "ssmbak"
+version = "0.0.2"
+description = ""
+authors = ["Old Mouse <github@newvoll.net>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+boto3 = "^1.26.39"
+prettytable = "^3.5.0"
+pyyaml = "^6.0.1"
+
+[tool.poetry.scripts]
+ssmbak = "ssmbak.cli.cli:main"
+ssmbak-all = "ssmbak.cli.backup_all:main"
+ssmbak-stack = "ssmbak.cli.stack:main"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.2.1"
+black = "^24.4.2"
+pylint = "^3.2.2"
+pre-commit = "^3.7.1"
+isort = "^5.13.2"
+pdoc3 = "^0.10.0"
+pytype = "^2024.4.11"
+requests = "^2.32.3"
+pysocks = "^1.7.1"
+awscli-local = "^0.22.0"
+
+[tool.pytype]
+inputs = ['ssmbak']
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = "black"
+
+[tool.pylint]
+ignored-classes = "pytest"

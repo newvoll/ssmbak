@@ -1,0 +1,209 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: all ssmbak resources to back up ssm events to s3
+
+Parameters:
+  Version:
+    Type: String
+
+  LogLevel:
+    Type: String
+    Default: INFO
+
+  ThresholdAgeOfOldestMessage:
+    Type: String
+    Description: Usually under ten minutes
+    Default: 3600
+
+  ThresholdNumberOfMessagesVisible:
+    Type: String
+    Description: Usually 0
+    Default: 0
+
+Resources:
+  StackParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: So other apps can find this stack
+      Name: /newvoll/ssmbak/stackname
+      Type: String
+      Value: !Ref AWS::StackName
+
+  BucketParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: So other apps can find this stack
+      Name: /newvoll/ssmbak/bucketname
+      Type: String
+      Value: !Ref Bucket
+
+  Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  Q:
+    Type: AWS::SQS::Queue
+
+  EventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: detects ssm param events and publishes them to ssmbak lambda q
+      EventPattern:
+        detail-type:
+          - Parameter Store Change
+        source:
+          - aws.ssm
+      Name: !Ref AWS::StackName
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt Q.Arn
+          Id: target-id1
+
+  QPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Principal: { Service: events.amazonaws.com }
+            Action: SQS:SendMessage
+            Resource: !GetAtt Q.Arn
+            Condition:
+              ArnEquals: { "aws:SourceArn": !GetAtt EventRule.Arn }
+      Queues:
+        - !Ref Q
+
+  SqsToLambda:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      BatchSize: 1
+      Enabled: true
+      EventSourceArn: !GetAtt Q.Arn
+      FunctionName: !GetAtt Function.Arn
+
+  Function:
+    Type: AWS::Lambda::Function
+    Properties:
+      Timeout: 30
+      Code:
+        ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ssmbak:${Version}"
+      Environment:
+        Variables:
+          Stack: !Ref "AWS::StackName"
+          SSMBAK_BUCKET: !Ref Bucket
+          LOGLEVEL: !Ref LogLevel
+      MemorySize: 128
+      PackageType: Image
+      Role: !GetAtt FunctionRole.Arn
+
+  FunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+        Version: 2012-10-17
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:PutObjectTagging
+                  - s3:DeleteObject
+                Resource:
+                  - !GetAtt Bucket.Arn
+                  - !Sub "${Bucket.Arn}/*"
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                Resource:
+                  - !GetAtt Q.Arn
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameters
+                  - ssm:GetParameter
+                Resource:
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource:
+                  - !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/ssm"
+          PolicyName: !Ref AWS::StackName
+
+  OldMessages:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: How stale are the messages?
+      MetricName: ApproximateAgeOfOldestMessage
+      Namespace: AWS/SQS
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt Q.QueueName
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 3
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: !Ref ThresholdAgeOfOldestMessage
+
+  VisibleMessages:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: How many Messages are not getting processed?
+      MetricName: ApproximateNumberOfMessagesNotVisible
+      Namespace: AWS/SQS
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt Q.QueueName
+      Statistic: Average
+      Period: 600
+      EvaluationPeriods: 2
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: !Ref ThresholdNumberOfMessagesVisible
+
+Outputs:
+  QUrl:
+    Description: Queue URL
+    Value: !Ref Q
+
+  QArn:
+    Description: Queue ARN
+    Value: !GetAtt Q.Arn
+
+  OldMessagesAlarm:
+    Description: Alarm name for stale messages
+    Value: !Ref OldMessages
+
+  VisibleMessagesAlarm:
+    Description: Alarm name for messages not getting processed
+    Value: !Ref VisibleMessages
+
+  Bucketname:
+    Description: The versioned s3 bucket
+    Value: !Ref Bucket

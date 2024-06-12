@@ -1,0 +1,18 @@
+{
+    "version": "0",
+    "id": "99a8b0e4-b9cc-c859-7f0a-5a7f98e314fa",
+    "detail-type": "Parameter Store Change",
+    "source": "aws.ssm",
+    "account": "000000000000",
+    "time": "2022-08-03T21:16:33Z",
+    "region": "us-east-1",
+    "resources": [
+        "arn:aws:ssm:us-east-1:000000000000:parameter/testssmbak/bas/wee"
+    ],
+    "detail": {
+        "name": "/testssmbak/bas/wee",
+        "type": "String",
+        "operation": "Update",
+	"description": "fancy description"
+    }
+}

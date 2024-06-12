@@ -1,0 +1,20 @@
+{
+    "Records": [
+        {
+            "messageId": "07e34a99-5480-4c7c-bc0b-44ea9c74076b",
+            "receiptHandle": "AQEBId/S5o7a0fXL24SfneZJRKtUrB0lF4aUEC2mMeVCDWXzbLJCWXHgCZZkTAW6oAB6xG+k1v4LwTlKP9LJv23Vsq9ndWy0wREQYrmgR52z7vJNdOCzoAV/o+1cvlf/vLGWbz57HKZJenyio4QOpvU6/2wnbjS8q0jGnQOfrFNbwR2vaVkw1DZNLD0hoUIGVO4/3b/Iw8JLqhm4Rs58mP4KJqqyQrGAib3amIEOp+mQfsZHtLzPUel/DM3/Ccb8U7mgkWgMZ87UUcR7q/ljB/FQ71fJCppNPwbocG6Ko2wH0v3sJRNrVz1QbvAplzfkE+Lq8/9ZRtH4UX2vcR62nQpim/kmfih1yqzRTpvuksoukd5um0EnQDSuR3o+o6yHkgGkrwIt+vXct+NOKeu0G3eWGaTK+Sy7175XVmdJXWJoUFE=",
+            "body": "{\"version\":\"0\",\"id\":\"2ada935b-482a-1f19-50a1-21aa9b6b7e2c\",\"detail-type\":\"Parameter Store Change\",\"source\":\"aws.ssm\",\"account\":\"000000000000\",\"time\":\"2022-08-09T01:03:01Z\",\"region\":\"us-east-1\",\"resources\":[\"arn:aws:ssm:us-east-1:000000000000:parameter/testssmbak/bas/desctest\"],\"detail\":{\"name\":\"/testssmbak/bas/desctest\",\"description\":\"fancydesc2\",\"type\":\"SecureString\",\"operation\":\"Update\"}}",
+            "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "1660007032420",
+                "SenderId": "AIDAJXNJGGKNS7OSV23OI",
+                "ApproximateFirstReceiveTimestamp": "1660007032431"
+            },
+            "messageAttributes": {},
+            "md5OfBody": "08a526cb73b963e532b0380646063f3b",
+            "eventSource": "aws:sqs",
+            "eventSourceARN": "arn:aws:sqs:us-east-1:000000000000:testssmbak-ssmbak-resource-Q-iO1gRP4hF4pI",
+            "awsRegion": "us-east-1"
+        }
+    ]
+}

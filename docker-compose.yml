@@ -1,0 +1,54 @@
+services:
+  localstack:
+    networks:
+      - ssmbaknet
+    container_name: "${LOCALSTACK_DOCKER_NAME:-localstack-main}"
+    image: localstack/localstack:3.4.0
+    ports:
+      - "127.0.0.1:4566:4566"            # LocalStack Gateway
+      - "127.0.0.1:4510-4559:4510-4559"  # external services port range
+    environment:
+      # LocalStack configuration: https://docs.localstack.cloud/references/configuration/
+      - DEBUG=${DEBUG:-0}
+    volumes:
+      - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    hostname: localstack
+    healthcheck:
+      test: ["CMD", "curl", "-H", "'Accept:application/json'", "localhost:4566/"]
+      start_period: 5s
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  ssmbak:
+    develop:
+      watch:
+        - action: rebuild
+          path: ssmbak/backup/ssmbak.py
+        - action: rebuild
+          path: docker-compose.yml
+    networks:
+      - ssmbaknet
+    platform: linux/amd64
+    build:
+      context: ssmbak/backup
+      dockerfile: Dockerfile
+    environment:
+      - envlabel1=local
+      - AWS_ENDPOINT=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=wee
+      - AWS_SECRET_ACCESS_KEY=wee
+      - AWS_DEFAULT_REGION=us-west-2
+      - SSMBAK_BUCKET=testssmbak
+      - LOGLEVEL=DEBUG
+    ports:
+      - "9000:8080"
+    depends_on:
+      localstack:
+        condition: service_healthy
+
+networks:
+  ssmbaknet:
+    name: ssmbaknet
+    driver: bridge

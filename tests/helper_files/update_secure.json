@@ -1,0 +1,18 @@
+{
+    "version": "0",
+    "id": "2ada935b-482a-1f19-50a1-21aa9b6b7e2c",
+    "detail-type": "Parameter Store Change",
+    "source": "aws.ssm",
+    "account": "000000000000",
+    "time": "2022-08-09T01:03:01Z",
+    "region": "us-east-1",
+    "resources": [
+        "arn:aws:ssm:us-east-1:000000000000:parameter/testssmbak/bas/desctest"
+    ],
+    "detail": {
+        "name": "/testssmbak/bas/desctest",
+        "description": "fancydesc2",
+        "type": "SecureString",
+        "operation": "Update"
+    }
+}

@@ -1,0 +1,17 @@
+{
+    "version": "0",
+    "id": "22a04aa6-e439-a08f-2073-0b219be6dd58",
+    "detail-type": "Parameter Store Change",
+    "source": "aws.ssm",
+    "account": "000000000000",
+    "time": "2022-08-03T21:16:48Z",
+    "region": "us-east-1",
+    "resources": [
+        "arn:aws:ssm:us-east-1:000000000000:parameter/testssmbak/bas/wee"
+    ],
+    "detail": {
+        "name": "/testssmbak/bas/wee",
+        "type": "String",
+        "operation": "Delete"
+    }
+}
