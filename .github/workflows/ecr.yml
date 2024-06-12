@@ -40,8 +40,8 @@ jobs:
       - name: Build, tag, and push docker image to Amazon ECR Public
         env:
           REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
-          REGISTRY_ALIAS: my-ecr-public-registry-alias
-          REPOSITORY: my-ecr-public-repo
+          REGISTRY_ALIAS: u6y3i3v0
+          REPOSITORY: ssmbak
           IMAGE_TAG: ${{ github.sha }}
         run: |
           VERSION=`grep version pyproject.toml | perl -ne '/"(\d\.\d\.\d)"/; print "$1";'`
