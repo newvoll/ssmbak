@@ -23,12 +23,14 @@ jobs:
       - name: Configure poetry
         run: |
           python -m poetry config virtualenvs.in-project true
-      - name: Install dependencies
-        run: |
-          python -m poetry install
+
       # for debugging
       - run: python --version
       - run: poetry debug info
+
+      - name: Install dependencies
+        run: |
+          python -m poetry install
       # Can't figure out how to cache localstack's image
       - name: Bring up localstack and Lambda
         run: docker compose up ssmbak --detach
