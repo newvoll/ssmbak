@@ -10,6 +10,7 @@ python = "^3.9"
 boto3 = "^1.26.39"
 prettytable = "^3.5.0"
 pyyaml = "^6.0.1"
+cfn-flip = "^1.3.0"
 
 [tool.poetry.scripts]
 ssmbak = "ssmbak.cli.cli:main"

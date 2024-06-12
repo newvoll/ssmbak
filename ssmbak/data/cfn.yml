@@ -100,10 +100,10 @@ Resources:
     Properties:
       Timeout: 30
       Code:
-        ImageUri: !Sub "public.ecr.aws/u6y3i3v0/ssmbak:${Version}"
+        ZipFile: REPLACEME
       Environment:
         Variables:
-          Stack: !Ref "AWS::StackName"
+          Stack: !Ref AWS::StackName
           SSMBAK_BUCKET: !Ref Bucket
           LOGLEVEL: !Ref LogLevel
       MemorySize: 128
