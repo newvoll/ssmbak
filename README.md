@@ -7,3 +7,8 @@ we use an s3 bucket with versioning enabled as a backend, with
 timestamps in metadata for use with AWS Eventbridge and Lambda. This
 project includes all the pieces to both backup and restore SSM Param
 paths and keys.
+
+# Quickstart
+
+% pip install ssmbak
+

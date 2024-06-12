@@ -100,7 +100,7 @@ Resources:
     Properties:
       Timeout: 30
       Code:
-        ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ssmbak:${Version}"
+        ImageUri: !Sub "public.ecr.aws/u6y3i3v0/ssmbak:${Version}"
       Environment:
         Variables:
           Stack: !Ref "AWS::StackName"
