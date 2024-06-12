@@ -95,6 +95,7 @@ class Stack:
         template_body = dump_yaml(template)
         kwargs = {
             "StackName": self.name,
+            "OnFailure": "DELETE",
             "Parameters": parameters,
             "Capabilities": ["CAPABILITY_NAMED_IAM"],
             "TemplateBody": template_body,

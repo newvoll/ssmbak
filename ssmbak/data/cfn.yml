@@ -99,6 +99,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Timeout: 30
+      Runtime: python3.10
       Code:
         ZipFile: REPLACEME
       Environment:
@@ -107,7 +108,8 @@ Resources:
           SSMBAK_BUCKET: !Ref Bucket
           LOGLEVEL: !Ref LogLevel
       MemorySize: 128
-      PackageType: Image
+      PackageType: Zip
+      Handler: index.handler
       Role: !GetAtt FunctionRole.Arn
 
   FunctionRole:
