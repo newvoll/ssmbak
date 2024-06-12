@@ -5,7 +5,8 @@ import os
 from pathlib import Path
 
 import boto3
-import yaml
+
+from cfn_flip import load_yaml
 
 logger = logging.getLogger(__name__)
 
@@ -15,14 +16,6 @@ def slurp(filename):
     with open(filename, encoding="utf-8") as x:
         f = x.read()
     return f
-
-
-def _any_constructor(loader, tag_suffix, node):  # pylint: disable=unused-argument
-    if isinstance(node, yaml.MappingNode):
-        return loader.construct_mapping(node)
-    if isinstance(node, yaml.SequenceNode):
-        return loader.construct_sequence(node)
-    return loader.construct_scalar(node)
 
 
 def sort_bucket(bucketname, region):
@@ -36,8 +29,7 @@ def sort_bucket(bucketname, region):
     else:
         template_dir = Path(__file__).parent.parent
         template_file = f"{template_dir}/data/cfn.yml"
-        yaml.add_multi_constructor("", _any_constructor, Loader=yaml.SafeLoader)
-        template = yaml.safe_load(slurp(template_file))
+        template = load_yaml(slurp(template_file))
         key = template["Resources"]["BucketParam"]["Properties"]["Name"]
         ssm = boto3.client(
             "ssm", endpoint_url=os.getenv("AWS_ENDPOINT"), region_name=region
