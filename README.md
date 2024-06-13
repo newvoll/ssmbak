@@ -19,7 +19,7 @@ You'll need the awscli and credentials that can create IAM resources
 % pip install ssmbak
 ...
 
-% SSMBAK_STACKNAME=ssmbak  # call it whatever you want
+% SSMBAK_STACKNAME=ssmbak
 
 % ssmbak-stack $SSMBAK_STACKNAME create
 06/13/24 01:43:05   CREATE_IN_PROGRESS  ssmbak  AWS::CloudFormation::Stack  User Initiated
