@@ -17,7 +17,7 @@ A crude cli works, but the library is well-tested.
 % pip install ssmbak
 
 
-% ssmbak-stack ssmbak create
+% ssmbak-stack ssmbak create  # call it whatever you want instead of ssmbak
 06/13/24 01:43:05   CREATE_IN_PROGRESS  ssmbak  AWS::CloudFormation::Stack  User Initiated
 ...
 06/13/24 01:44:15   CREATE_COMPLETE  ssmbak  AWS::CloudFormation::Stack
@@ -27,7 +27,7 @@ A crude cli works, but the library is well-tested.
 {'name': '/newvoll/ssmbak/bucketname', 'type': 'String', 'operation': 'Update', 'time': datetime.datetime(2024, 6, 12, 18, 44, 47, 979407), 'description': 'So other apps can find this stack'}
 {'name': '/newvoll/ssmbak/stackname', 'type': 'String', 'operation': 'Update', 'time': datetime.datetime(2024, 6, 12, 18, 44, 48, 392828), 'description': 'So other apps can find this stack'}
 
-Above was backed-up (might be nothing).
+Above was backed-up.
 
 
 % aws ssm put-parameter --name /testoossmbak/deep/yay --value hihi --type String \
