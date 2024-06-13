@@ -83,13 +83,16 @@ def _do_cfn(region):
         getattr(stack, args.command)(template_file, {"Version": version("ssmbak")})
         yay = stack.watch()
         if yay:
+            print()
             print(
                 "The awscli can show you live logs of the lambda in action. "
                 "To generate some action:"
             )
+            print()
             print("ssmbak-all --do-it")
             print()
-            print("Then:")
+            print("Then, after a minute:")
+            print()
             print(
                 "aws logs tail --format short /aws/lambda/"
                 f"{stack.lambdaname} --follow"
