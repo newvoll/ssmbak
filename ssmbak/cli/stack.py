@@ -84,19 +84,12 @@ def _do_cfn(region):
         yay = stack.watch()
         if yay:
             print()
-            print(
-                "The awscli can show you live logs of the lambda in action. "
-                "To generate some action:"
-            )
+            print(f"Lambda: {stack.lambdaname}")
+            print(f"Bucket: {stack.bucketname}")
+            print(f"Cloudwatch log group: /aws/lambda/{stack.lambdaname}")
             print()
-            print("ssmbak-all --do-it")
+            print("ssmbak-all will back up all ssm params if provided --do-it.")
             print()
-            print("Then, after a minute:")
-            print()
-            print(
-                "aws logs tail --format short /aws/lambda/"
-                f"{stack.lambdaname} --follow"
-            )
         else:
             print(
                 "Check the error messages above. Are you sure you have enough privs"
