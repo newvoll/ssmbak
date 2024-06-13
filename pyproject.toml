@@ -44,7 +44,9 @@ build-backend = "poetry.core.masonry.api"
 profile = "black"
 
 [tool.pylint]
-ignored-classes = "pytest"
+ignored-classes = ["pytest"]
+ignore-paths = '^docs/'
+
 
 [tool.poetry.urls]
 Homepage = "https://github.com/newvoll/ssmbak"
