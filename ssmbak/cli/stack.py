@@ -88,7 +88,10 @@ def _do_cfn(region):
             print(f"Bucket: {stack.bucketname}")
             print(f"Cloudwatch log group: /aws/lambda/{stack.lambdaname}")
             print()
-            print("ssmbak-all will back up all ssm params if provided --do-it.")
+            print(
+                "ssmbak-all will back up all ssm params if provided --do-it, "
+                "list if not"
+            )
             print()
         else:
             print(
