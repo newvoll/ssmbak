@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "ssmbak"
 version = "0.0.5"
-description = ""
+description = "Event-driven SSM Parame backups and point-in-time restore."
 authors = ["Old Mouse <github@newvoll.net>"]
 readme = "README.md"
 
@@ -40,3 +40,9 @@ profile = "black"
 
 [tool.pylint]
 ignored-classes = "pytest"
+
+[tool.poetry.urls]
+Homepage = "https://github.com/newvoll/ssmbak"
+# Documentation = "https://readthedocs.org"
+Repository = "https://github.com/newvoll/ssmbak"
+Issues = "https://github.com/newvoll/ssmbak/issues"

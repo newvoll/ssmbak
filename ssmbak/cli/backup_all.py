@@ -142,4 +142,4 @@ def backup(bucketname):
         print("That's what would have been backed-up. --do-it to actually perform.")
     else:
         print()
-        print("Above was backed-up (might be nothing).")
+        print("Above was backed-up.")
