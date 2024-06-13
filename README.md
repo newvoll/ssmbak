@@ -13,14 +13,15 @@ A crude cli works, and the library is well-tested.
 
 # CLI Quickstart
 You'll need the awscli and credentials that can create IAM resources
-(to assign minimal permissions to the lambda role).
+(to assign minimal permissions to the lambda role). Each code block is
+followed by another block of its output.
 
 ```
 pip install ssmbak
 SSMBAK_STACKNAME=ssmbak
 ssmbak-stack $SSMBAK_STACKNAME create
 ```
-Output:
+
 ```
 06/13/24 01:43:05   CREATE_IN_PROGRESS  ssmbak  AWS::CloudFormation::Stack  User Initiated
 ...
@@ -35,7 +36,7 @@ aws ssm put-parameter --name /testyssmbak/$i --value initial --type String --ove
 aws ssm put-parameter --name /testyssmbak/deeper/$i --value initial --type String --overwrite
 done
 ```
-Output:
+
 ```
 Standard        1
 Standard        1
@@ -58,7 +59,7 @@ They're all set to `inital`.
 ```
 aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@hee=split; print "$hee[4] \t\t $hee[6]\n";'
 ```
-Output:
+
 ```
 /testyssmbak/1 		 initial
 /testyssmbak/2 		 initial
@@ -75,7 +76,7 @@ The lambda is configured to write logs to cloudwatch:
 SSMBAK_LAMBDANAME=`ssmbak-stack $SSMBAK_STACKNAME lambdaname`
 aws logs tail --format short /aws/lambda/$SSMBAK_LAMBDANAME
 ```
-Output:
+
 ```
 2024-06-13T20:11:07 INIT_START Runtime Version: python:3.10.v36	Runtime Version ARN: arn:aws:lambda:us-west-2::runtime:bbd47e5ef4020932b9374e2ab9f9ed3bac502f27e17a031c35d9fb8935cf1f8c
 2024-06-13T20:11:07 START RequestId: d404f4c7-1c53-5e41-a7db-aa2248dee8cd Version: $LATEST
@@ -93,7 +94,7 @@ Update #2 for path and subpath:
 aws ssm put-parameter --name /testyssmbak/2 --value UPDATED --type String --overwrite
 aws ssm put-parameter --name /testyssmbak/deeper/2 --value UPDATED --type String --overwrite
 ```
-Output:
+
 ```
 Standard        2
 Standard        2
@@ -105,7 +106,7 @@ Now #2 for each is set to `UPDATED`:
 ```
 aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@hee=split; print "$hee[4] \t\t $hee[6]\n";'
 ```
-Output:
+
 ```
 /testyssmbak/1 		 initial
 /testyssmbak/2 		 UPDATED
@@ -121,7 +122,7 @@ When we preview the IN_BETWEEN point-in-time, we see that everything was `initia
 ```
 ssmbak preview /testyssmbak $IN_BETWEEN --recursive
 ```
-Output:
+
 ```
 +-----------------------+---------+--------+---------------------------+
 | Name                  | Value   | Type   | Modified                  |
@@ -141,7 +142,7 @@ Do the restore:
 ```
 ssmbak restore /testyssmbak $IN_BETWEEN --recursive
 ```
-Output:
+
 ```
 +-----------------------+---------+--------+---------------------------+
 | Name                  | Value   | Type   | Modified                  |
@@ -161,7 +162,7 @@ And now they're all back to `initial`:
 ```
 aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@hee=split; print "$hee[4] \t\t $hee[6]\n";'
 ```
-Output:
+
 ```
 /testyssmbak/1 		 initial
 /testyssmbak/2 		 initial
