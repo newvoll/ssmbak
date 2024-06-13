@@ -46,6 +46,6 @@ ignored-classes = "pytest"
 
 [tool.poetry.urls]
 Homepage = "https://github.com/newvoll/ssmbak"
-# Documentation = "https://readthedocs.org"
+Documentation = "https://readthedocs.org/projects/ssmbak/"
 Repository = "https://github.com/newvoll/ssmbak"
 Issues = "https://github.com/newvoll/ssmbak/issues"
