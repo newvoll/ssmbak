@@ -5,12 +5,10 @@ import os
 import re
 import sys
 import time
-
 from pathlib import Path
 
 import boto3
-from cfn_flip import load_yaml, dump_yaml
-
+from cfn_flip import dump_yaml, load_yaml
 
 from ssmbak.cli import helpers
 
@@ -88,8 +86,8 @@ class Stack:
         ]
 
         template = load_yaml(helpers.slurp(template_file))
-        template["Resources"]["Function"]["Properties"]["Code"]["ZipFile"] = helpers.slurp(
-            f"{Path(__file__).parent.parent}/backup/ssmbak.py"
+        template["Resources"]["Function"]["Properties"]["Code"]["ZipFile"] = (
+            helpers.slurp(f"{Path(__file__).parent.parent}/backup/ssmbak.py")
         )
         template_body = dump_yaml(template)
         kwargs = {

@@ -81,7 +81,18 @@ def _do_cfn(region):
         template_dir = Path(__file__).parent.parent
         template_file = f"{template_dir}/data/cfn.yml"
         getattr(stack, args.command)(template_file, {"Version": version("ssmbak")})
-        stack.watch()
+        yay = stack.watch()
+        if yay:
+            print("The awscli can show you live logs of the lambda in action:")
+            print(
+                "aws logs tail --format short /aws/lambda/"
+                f"{stack.lambdaname} --follow"
+            )
+        else:
+            print(
+                "Check the error messages above. Are you sure you have enough privs"
+                "to create all those resources?"
+            )
     elif args.command == "bucketname":
         print(stack.bucketname)
     elif args.command == "lambdaname":
