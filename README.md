@@ -9,19 +9,19 @@ enabled as a backend.
 Leverages AWS Eventbridge and Lambda. This project includes all the
 pieces to both backup and restore SSM Param paths and keys.
 
-A crude cli works, but the library is well-tested.
+A crude cli works, and the library is well-tested.
 
 # CLI Quickstart
 You'll need the awscli and credentials that can create IAM resources
 (to assign minimal permissions to the lambda role).
 
 ```
-% pip install ssmbak
-...
-
-% SSMBAK_STACKNAME=ssmbak
-
-% ssmbak-stack $SSMBAK_STACKNAME create
+pip install ssmbak
+SSMBAK_STACKNAME=ssmbak
+ssmbak-stack $SSMBAK_STACKNAME create
+```
+Output:
+```
 06/13/24 01:43:05   CREATE_IN_PROGRESS  ssmbak  AWS::CloudFormation::Stack  User Initiated
 ...
 06/13/24 01:44:15   CREATE_COMPLETE  ssmbak  AWS::CloudFormation::Stack
@@ -29,11 +29,14 @@ You'll need the awscli and credentials that can create IAM resources
 
 Create some params with value `initial` in `testyssmbak/` and `testyssmbak/deeper` to show recursion:
 ```
-% for i in $(seq 3)
+for i in $(seq 3)
 do
 aws ssm put-parameter --name /testyssmbak/$i --value initial --type String --overwrite
 aws ssm put-parameter --name /testyssmbak/deeper/$i --value initial --type String --overwrite
 done
+```
+Output:
+```
 Standard        1
 Standard        1
 Standard        1
@@ -47,13 +50,16 @@ it (UTC), and sleep some more to give ssmbak some time to back them
 up.
 
 ```
-% sleep 30 && IN_BETWEEN=`date -u +"%Y-%m-%dT%H:%M:%S"` && sleep 30
+sleep 30 && IN_BETWEEN=`date -u +"%Y-%m-%dT%H:%M:%S"` && sleep 30
 ```
 
 They're all set to `inital`.
 
 ```
-% aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@hee=split; print "$hee[4] \t\t $hee[6]\n";'
+aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@hee=split; print "$hee[4] \t\t $hee[6]\n";'
+```
+Output:
+```
 /testyssmbak/1 		 initial
 /testyssmbak/2 		 initial
 /testyssmbak/3 		 initial
@@ -66,9 +72,11 @@ They're all set to `inital`.
 The lambda is configured to write logs to cloudwatch:
 
 ```
-% SSMBAK_LAMBDANAME=`ssmbak-stack $SSMBAK_STACKNAME lambdaname`
-
-% aws logs tail --format short /aws/lambda/$SSMBAK_LAMBDANAME
+SSMBAK_LAMBDANAME=`ssmbak-stack $SSMBAK_STACKNAME lambdaname`
+aws logs tail --format short /aws/lambda/$SSMBAK_LAMBDANAME
+```
+Output:
+```
 2024-06-13T20:11:07 INIT_START Runtime Version: python:3.10.v36	Runtime Version ARN: arn:aws:lambda:us-west-2::runtime:bbd47e5ef4020932b9374e2ab9f9ed3bac502f27e17a031c35d9fb8935cf1f8c
 2024-06-13T20:11:07 START RequestId: d404f4c7-1c53-5e41-a7db-aa2248dee8cd Version: $LATEST
 2024-06-13T20:11:10 [INFO]	2024-06-13T20:11:10.776Z	d404f4c7-1c53-5e41-a7db-aa2248dee8cd	put_object {'Bucket': 'ssmbak-bucket-vhvs73zpfvy5', 'Key': '/testyssmbak/3', 'Tagging': 'ssmbakTime=1718309456&ssmbakType=String', 'Body': 'initial'}
@@ -82,10 +90,12 @@ The lambda is configured to write logs to cloudwatch:
 Update #2 for path and subpath:
 
 ```
-% aws ssm put-parameter --name /testyssmbak/2 --value UPDATED --type String --overwrite
+aws ssm put-parameter --name /testyssmbak/2 --value UPDATED --type String --overwrite
+aws ssm put-parameter --name /testyssmbak/deeper/2 --value UPDATED --type String --overwrite
+```
+Output:
+```
 Standard        2
-
-% aws ssm put-parameter --name /testyssmbak/deeper/2 --value UPDATED --type String --overwrite
 Standard        2
 ```
 
@@ -93,7 +103,10 @@ Standard        2
 Now #2 for each is set to `UPDATED`:
 
 ```
-% aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@hee=split; print "$hee[4] \t\t $hee[6]\n";'
+aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@hee=split; print "$hee[4] \t\t $hee[6]\n";'
+```
+Output:
+```
 /testyssmbak/1 		 initial
 /testyssmbak/2 		 UPDATED
 /testyssmbak/3 		 initial
@@ -106,7 +119,10 @@ Now #2 for each is set to `UPDATED`:
 When we preview the IN_BETWEEN point-in-time, we see that everything was `initial` at that time.
 
 ```
-% ssmbak preview /testyssmbak $IN_BETWEEN --recursive
+ssmbak preview /testyssmbak $IN_BETWEEN --recursive
+```
+Output:
+```
 +-----------------------+---------+--------+---------------------------+
 | Name                  | Value   | Type   | Modified                  |
 +-----------------------+---------+--------+---------------------------+
@@ -123,16 +139,19 @@ When we preview the IN_BETWEEN point-in-time, we see that everything was `initia
 Do the restore:
 
 ```
-% ssmbak restore /testyssmbak $IN_BETWEEN --recursive
+ssmbak restore /testyssmbak $IN_BETWEEN --recursive
+```
+Output:
+```
 +-----------------------+---------+--------+---------------------------+
 | Name                  | Value   | Type   | Modified                  |
 +-----------------------+---------+--------+---------------------------+
-| /testyssmbak/deeper/1 | initial | String | 2024-06-13 20:10:54+00:00 |
-| /testyssmbak/deeper/2 | initial | String | 2024-06-13 20:10:55+00:00 |
-| /testyssmbak/1        | initial | String | 2024-06-13 20:10:53+00:00 |
-| /testyssmbak/deeper/3 | initial | String | 2024-06-13 20:10:56+00:00 |
-| /testyssmbak/3        | initial | String | 2024-06-13 20:10:56+00:00 |
-| /testyssmbak/2        | initial | String | 2024-06-13 20:10:54+00:00 |
+| /testyssmbak/1        | initial | String | 2024-06-13 21:08:50+00:00 |
+| /testyssmbak/2        | initial | String | 2024-06-13 21:08:51+00:00 |
+| /testyssmbak/3        | initial | String | 2024-06-13 21:08:52+00:00 |
+| /testyssmbak/deeper/1 | initial | String | 2024-06-13 21:08:50+00:00 |
+| /testyssmbak/deeper/2 | initial | String | 2024-06-13 21:08:52+00:00 |
+| /testyssmbak/deeper/3 | initial | String | 2024-06-13 21:08:53+00:00 |
 +-----------------------+---------+--------+---------------------------+
 ```
 
@@ -140,7 +159,9 @@ Do the restore:
 And now they're all back to `initial`:
 
 ```
-% aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@hee=split; print "$hee[4] \t\t $hee[6]\n";'
+aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@hee=split; print "$hee[4] \t\t $hee[6]\n";'
+```
+```
 /testyssmbak/1 		 initial
 /testyssmbak/2 		 initial
 /testyssmbak/3 		 initial
@@ -148,6 +169,12 @@ And now they're all back to `initial`:
 /testyssmbak/deeper/2 		 initial
 /testyssmbak/deeper/3 		 initial
 ```
+
+That's it!
+
+You can now seed backups for all previously set SSM Params with
+`ssmbak-all`. It will just show you what would be backed-up. `--do-it`
+to actually perform the backups.
 
 ## CLI Gotchas:
 * You need a bunch of shady permissions to create the stack. Look for such errors if it fails.
@@ -165,10 +192,11 @@ And now they're all back to `initial`:
 # Lib Quickstart
 
 ```
-% ssmbak-stack ssmbak bucketname
+ssmbak-stack ssmbak bucketname
 ssmbak-bucket-dkvp9oegrx2y
-
-% python
+python
+```
+```
 >>> from ssmbak.restore.actions import Path
 
 >>> from datetime import datetime, timezone
