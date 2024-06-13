@@ -3,11 +3,11 @@
 The AWS SSM Parameter Store is simple and great for AWS config bits,
 but it only preserves 100 versions, 0 if the parameter has been
 deleted. To enable point-in-time restore, including deleted versions
-and entire recursive trees.
+and entire recursive trees, we use an s3 bucket with versioning
+enabled as a backend.
 
-We use an s3 bucket with versioning enabled as a backend. Leverages
-AWS Eventbridge and Lambda. This project includes all the pieces to
-both backup and restore SSM Param paths and keys.
+Leverages AWS Eventbridge and Lambda. This project includes all the
+pieces to both backup and restore SSM Param paths and keys.
 
 A crude cli works, but the library is well-tested.
 
