@@ -40,3 +40,9 @@ profile = "black"
 
 [tool.pylint]
 ignored-classes = "pytest"
+
+[tool.poetry.urls]
+Homepage = "https://github.com/newvoll/ssmbak"
+# Documentation = "https://readthedocs.org"
+Repository = "https://github.com/newvoll/ssmbak"
+Issues = "https://github.com/newvoll/ssmbak/issues"
