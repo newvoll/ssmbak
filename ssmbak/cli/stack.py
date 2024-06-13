@@ -84,9 +84,12 @@ def _do_cfn(region):
         yay = stack.watch()
         if yay:
             print(
-                "The awscli can show you live logs of the lambda in action "
-                "(just as soon as the stack's param gets processed):"
+                "The awscli can show you live logs of the lambda in action. "
+                "To generate some action:"
             )
+            print("ssmbak-all --do-it")
+            print()
+            print("Then:")
             print(
                 "aws logs tail --format short /aws/lambda/"
                 f"{stack.lambdaname} --follow"
