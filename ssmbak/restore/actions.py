@@ -8,13 +8,13 @@ bunch. You can choose whether to operate on the path recursively
 
 Typical usage example:
 
-    from ssmbak.restore.actions import Path
-    from datetime import datetime, timezone
+from ssmbak.restore.actions import Path
+from datetime import datetime, timezone
 
-    point_in_time = datetime(2023, 8, 3, 21, 9, 31, tzinfo=timezone.utc)
-    path = Path("/some/ssm/path", point_in_time, "us-west-2", mys3bucket, recurse=True)
-    previews = path.preview()
-    path.restore() #  == previews
+* point_in_time = datetime(2023, 8, 3, 21, 9, 31, tzinfo=timezone.utc)
+* path = Path("/some/ssm/path", point_in_time, "us-west-2", mys3bucket, recurse=True)
+* previews = path.preview()
+* path.restore()  #  == previews
 """
 
 import logging
