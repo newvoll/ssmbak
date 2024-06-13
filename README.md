@@ -170,11 +170,16 @@ ssmbak-bucket-dkvp9oegrx2y
 
 % python
 >>> from ssmbak.restore.actions import Path
+
 >>> from datetime import datetime, timezone
+
 >>> in_between = datetime.strptime("2024-06-13T01:55:26", "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
+
 >>> path = Path("/testoossmbak", in_between, "us-west-2", "ssmbak-bucket-dkvp9oegrx2y", recurse=True)
+
 >>> path.preview()
 [{'Name': '/testoossmbak/deep/yay', 'Deleted': True, 'Modified': datetime.datetime(2024, 6, 13, 1, 50, 22, tzinfo=tzutc())}]
+
 >>> path.restore()
 ```
 
@@ -185,8 +190,16 @@ ssmbak-bucket-dkvp9oegrx2y
 * Support for advanced ssm params has not been tested at all.
 
 # Development
+This is a poetry project, so it should be butter once you get that sorted.
 
 # Testing
+Testing uses localstack, as you can see in the Github
+actions. `docker-compose up` should do the trick. Recent docker
+versions allow for --watch, allowing for hot-reloading of the lambda.
+
+* Lambda tests use both the lambda's backup function and hitting the local
+  container running it. Container tests are skipped in AWS.
+
 
 ## Testing Gotchas
 * When testing on aws instead of localstack, don't use same bucket as running lambda!
