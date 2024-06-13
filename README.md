@@ -2,13 +2,16 @@
 
 The AWS SSM Parameter Store is simple and great for AWS config bits,
 but it only preserves 100 versions, 0 if the parameter has been
-deleted. To enable point-in-time restore, including deleted versions,
-we use an s3 bucket with versioning enabled as a backend, with
-timestamps in metadata for use with AWS Eventbridge and Lambda. This
-project includes all the pieces to both backup and restore SSM Param
-paths and keys.
+deleted. To enable point-in-time restore, including deleted versions
+and entire recursive trees.
 
-# Quickstart
+We use an s3 bucket with versioning enabled as a backend. Leverages
+AWS Eventbridge and Lambda. This project includes all the pieces to
+both backup and restore SSM Param paths and keys.
+
+A crude cli works, but the library is well-tested.
+
+# CLI Quickstart
 
 ```
 % pip install ssmbak
@@ -86,6 +89,32 @@ PARAMETER       arn:aws:ssm:us-west-2:285043365592:parameter/testoossmbak/deep/y
 
 ```
 
-Gotchas:
+## CLI Gotchas:
 * You need a bunch of shady permissions to create the stack. Look for such errors if it fails.
 * `aws` commands require that the awscli is installed and configured.
+
+
+
+# Lib Quickstart
+
+```
+% ssmbak-stack ssmbak bucketname
+ssmbak-bucket-dkvp9oegrx2y
+
+% python
+>>> from ssmbak.restore.actions import Path
+>>> from datetime import datetime, timezone
+>>> in_between = datetime.strptime("2024-06-13T01:55:26", "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
+>>> path = Path("/testoossmbak", in_between, "us-west-2", "ssmbak-bucket-dkvp9oegrx2y", recurse=True)
+>>> path.preview()
+[{'Name': '/testoossmbak/deep/yay', 'Deleted': True, 'Modified': datetime.datetime(2024, 6, 13, 1, 50, 22, tzinfo=tzutc())}]
+>>> path.restore()
+```
+
+# General gotchas
+* Alarms
+* kms key for added security
+* No support for advanced ssm params
+* probably lose tags if deleted
+* testing on aws -- don't use same bucket as running lambda!
+  * will set versioning and manipulate/destroy pytest.test_path
