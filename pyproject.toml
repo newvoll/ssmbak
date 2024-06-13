@@ -18,8 +18,6 @@ cfn-flip = "1.3.0"
 ssmbak = "ssmbak.cli.cli:main"
 ssmbak-all = "ssmbak.cli.backup_all:main"
 ssmbak-stack = "ssmbak.cli.stack:main"
-sphinx = "^7.3.7"
-sphinx-rtd-theme = "^2.0.0"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.1"
@@ -32,6 +30,8 @@ pytype = "^2024.4.11"
 requests = "^2.32.3"
 pysocks = "^1.7.1"
 awscli-local = "^0.22.0"
+sphinx = "^7.3.7"
+sphinx-rtd-theme = "^2.0.0"
 
 [tool.pytype]
 inputs = ['ssmbak']
