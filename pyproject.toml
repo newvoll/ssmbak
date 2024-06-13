@@ -31,6 +31,8 @@ requests = "^2.32.3"
 pysocks = "^1.7.1"
 awscli-local = "^0.22.0"
 
+sphinx = "^7.3.7"
+sphinx-rtd-theme = "^2.0.0"
 [tool.pytype]
 inputs = ['ssmbak']
 
