@@ -156,7 +156,7 @@ class Path(Resource):
 
         names = self.get_names()
         previews = [self.preview_key(name) for name in names]
-        return previews
+        return sorted(previews, key=lambda d: d["Name"])
 
     def restore(self) -> list[Preview]:
         """Restore parameters to their state at time,
