@@ -28,8 +28,12 @@ A crude cli works, but the library is well-tested.
 {'name': '/newvoll/ssmbak/stackname', 'type': 'String', 'operation': 'Update', 'time': datetime.datetime(2024, 6, 12, 18, 44, 48, 392828), 'description': 'So other apps can find this stack'}
 
 Above was backed-up.
+```
 
+Those were created by the stack, but the lambda function may not have
+been active when they were created.
 
+```
 % aws ssm put-parameter --name /testoossmbak/deep/yay --value hihi --type String \
   && sleep 60 \
   && IN_BETWEEN=`date -u +"%Y-%m-%dT%H:%M:%S"` \
