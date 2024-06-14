@@ -42,6 +42,7 @@ def test_path(recurse):
     )
     logger.info("preview")
     previews = path.preview()
+    assert len(previews) == len(names)
     assert [x["Name"] for x in previews] == sorted(names)
     helpers.compare_previews_with_params(previews, initial_params)
     assert {x["Modified"] for x in previews} == {
