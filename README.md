@@ -20,16 +20,19 @@ Params.
 	* the well-tested [library](https://ssmbak.readthedocs.io/en/latest/ssmbak.restore.html#module-ssmbak.restore.actions)
 ```
 from ssmbak.restore.actions import Path
-Path.prevew()
+Path.restore()
 ```
 
 Code blocks are separated from their output by another block in this README for ease of copy/paste.
 
 # Quickstart
+You'll need the awscli and credentials that can create IAM resources
+with Cloudformation (to assign minimal permissions to the lambda
+role).
+
 ```
 pip install ssmbak
-SSMBAK_STACKNAME=ssmbak
-ssmbak-stack $SSMBAK_STACKNAME create
+ssmbak-stack <SSMBAK_STACKNAME> create
 ```
 
 That's it! All new params will automatically be backed-up and
@@ -42,9 +45,6 @@ it with `--do-it`. You can also supply `--prefix`.
 # CLI Tutorial
 
 Once the stack is up and new params are backed-up automatically, you can go through the following steps to give you a feel for how it works.
-
-You'll need the awscli and credentials that can create IAM resources
-(to assign minimal permissions to the lambda role).
 
 Create some params with value `initial` in `testyssmbak/` and `testyssmbak/deeper` to show recursion:
 ```
@@ -88,9 +88,10 @@ aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@hee=
 ```
 
 
-The lambda is configured to write logs to cloudwatch:
+The lambda is configured to write logs to cloudwatch. SSMBAK_STACKNAME is whatever you chose for `ssmbak-stack <SSMBAK_STACKNAME> create`.
 
 ```
+SSMBAK_STACKNAME=ssmbak
 SSMBAK_LAMBDANAME=`ssmbak-stack $SSMBAK_STACKNAME lambdaname`
 aws logs tail --format short /aws/lambda/$SSMBAK_LAMBDANAME
 ```
@@ -195,7 +196,8 @@ You can now seed backups for all previously set SSM Params with
 to actually perform the backups.
 
 ### CLI Gotchas:
-* You need a bunch of shady permissions to create the stack. Look for such errors if it fails.
+* You need a bunch of shady permissions to create the stack. Look for
+  such errors if it fails.
 * `aws` commands require that the awscli is installed and configured.
 
 
@@ -244,9 +246,7 @@ This is a poetry project, so it should be butter once you get that sorted.
 
 # Testing
 Testing uses localstack, as you can see in the Github
-actions. `docker-compose up` should do the trick.
-
-* After `poetry shell`, you can just `./tests/tests/test_localstack.sh`.
+actions. `docker-compose up` should do the trick, then `./tests/test_localstack.sh`.
 
 * `source tests/localstack_env.sh` to point ssmbak to localstack.
 

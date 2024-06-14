@@ -74,7 +74,9 @@ class Path(Resource):
 
     def __repr__(self):
         return (
-            f"{self.__class__.__name__}({self.name}, {self.region}, {self.bucketname})"
+            f"{self.__class__.__name__}({self.name}, "
+            f"{self.checktime.strftime('%Y-%m-%dT%H:%M:%SZ')}, "
+            f"{self.region}, {self.bucketname})"
         )
 
     def get_names(self) -> list[str]:

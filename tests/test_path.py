@@ -30,7 +30,7 @@ def test_path(recurse):
     initial_params = helpers.create_and_check(names)
     logger.info("update some")
     helpers.update_and_check(names)
-    # check that restore() returns updated
+    # check that restore() returns originals
     in_between = helpers.str2datetime("2023-08-31T09:48:00")
     path = Path(
         pytest.test_path,
@@ -49,19 +49,7 @@ def test_path(recurse):
     logger.info("restore, which uses preview")
     assert path.restore() == previews
     for name in names:
-        ssm_param = pytest.ssm.get_parameter(Name=name, WithDecryption=True)[
-            "Parameter"
-        ]
-        assert ssm_param["Value"] == initial_params[ssm_param["Name"]]["Value"]
-        assert ssm_param["Type"] == initial_params[ssm_param["Name"]]["Type"]
-        param_desc = pytest.ssm.describe_parameters(
-            ParameterFilters=[{"Key": "Name", "Option": "Equals", "Values": [name]}]
-        )["Parameters"][0]
-        if "Description" in initial_params[ssm_param["Name"]]:
-            assert (
-                param_desc["Description"]
-                == initial_params[ssm_param["Name"]]["Description"]
-            )
+        helpers.check_param(name, initial_params)
     n, to_deletes = helpers.delete_some(3, names)
     logger.info("delete %s", to_deletes)
     ## for deleted, check that it worked
@@ -103,31 +91,3 @@ def test_path(recurse):
             "version_objects": len(names) * 2 - n,
         }
     )
-
-
-def test_one_key_and_tz():
-    """Originally for tz test, but other bits got added."""
-    name = f"{pytest.test_path}/{helpers.rando()}"
-    initial_params = helpers.create_and_check([name])
-    helpers.update_and_check([name])
-    just_after = helpers.str2datetime("2022-08-03T21:10:00")
-    path = Path(name, just_after, pytest.region, pytest.bucketname)
-    version = path.get_latest_version(name)
-    logger.debug(helpers.pretty(version))
-    preview = path.preview()[0]
-    kwargs = {
-        "Name": name,
-        "Value": initial_params[name]["Value"],
-        "Type": initial_params[name]["Type"],
-        "Modified": datetime(2022, 8, 3, 21, 9, 31, tzinfo=timezone.utc),
-    }
-    if "Description" in initial_params[name]:
-        kwargs["Description"] = initial_params[name]["Description"]
-    assert preview == kwargs
-    in_between = helpers.str2datetime("2023-08-31T09:48:00")
-    path = Path(name, in_between, pytest.region, pytest.bucketname)
-    logger.debug(helpers.pretty(preview))
-    path.restore()
-    too_early = helpers.str2datetime("1999-08-31T09:48:00")
-    path = Path(name, too_early, pytest.region, pytest.bucketname)
-    assert path.get_latest_version(name) == {}

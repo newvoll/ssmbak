@@ -206,7 +206,7 @@ class Resource:
         )
         result = paginated.build_full_result()
         keyed_params = {}
-        if "Parameters" in result:
+        if result["Parameters"]:
             params = result["Parameters"]
         else:
             try:

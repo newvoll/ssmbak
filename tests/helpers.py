@@ -131,9 +131,9 @@ def delete_params(names):
         logger.debug("updated_action: %s", updated_action)
         ssmbak.backup(updated_action)
         deleted_params[name] = deleted_param
+    # deleteds have no tags, so LastModified, thus sleep
     time.sleep(1)
     deltime = datetime.now(tz=timezone.utc)
-    # deleteds have no tags, so LastModified, thus sleep
     ## update one more
     for i, name in enumerate(names):
         what_type = "SecureString" if i % 5 == 0 else "String"
@@ -145,6 +145,18 @@ def delete_params(names):
     # pylint: disable=fixme
     # TODO: test to make sure deleteds don't appear if not there_now?
     return deltime, deleted_params
+
+
+def check_param(name, params):
+    """Check a single param against a list of keyed dicts"""
+    ssm_param = pytest.ssm.get_parameter(Name=name, WithDecryption=True)["Parameter"]
+    assert ssm_param["Value"] == params[ssm_param["Name"]]["Value"]
+    assert ssm_param["Type"] == params[ssm_param["Name"]]["Type"]
+    param_desc = pytest.ssm.describe_parameters(
+        ParameterFilters=[{"Key": "Name", "Option": "Equals", "Values": [name]}]
+    )["Parameters"][0]
+    if "Description" in params[ssm_param["Name"]]:
+        assert param_desc["Description"] == params[ssm_param["Name"]]["Description"]
 
 
 def create_and_check(names):
