@@ -10,7 +10,7 @@ import pprint
 import random
 import string
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -131,8 +131,11 @@ def delete_params(names):
         logger.debug("updated_action: %s", updated_action)
         ssmbak.backup(updated_action)
         deleted_params[name] = deleted_param
-    time.sleep(1)
-    deltime = datetime.now(tz=timezone.utc)
+        logger.info("%s deleted", name)
+    logger.info("sleeping at %s", datetime.now(tz=timezone.utc))
+    n = 2
+    time.sleep(n)
+    deltime = datetime.now(tz=timezone.utc) - timedelta(0, n / 2)
     # deleteds have no tags, so LastModified, thus sleep
     ## update one more
     for i, name in enumerate(names):
@@ -144,6 +147,7 @@ def delete_params(names):
         ssmbak.backup(post_delete_action)
     # pylint: disable=fixme
     # TODO: test to make sure deleteds don't appear if not there_now?
+    logger.info("done delete/update at %s", datetime.now(tz=timezone.utc))
     return deltime, deleted_params
 
 
