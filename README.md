@@ -12,10 +12,12 @@ pieces to both backup and restore SSM Param paths and keys.
 * Backup: Eventbridge -> SQS queue -> Lambda -> S3
   * launch cloudformation stack from template ssmbak/data/cfn.yml
 * Restore:
-  * pip install ssmbak
-    * ssmbak preview/restore cli
-	* from ssmbak.restore.actions import Path
-	* Path.prevew()
+  * `pip install ssmbak`
+    * ssmbak preview/restore cli `ssmbak`
+```
+from ssmbak.restore.actions import Path
+Path.prevew()
+```
 
 A crude cli works, and [the library](https://ssmbak.readthedocs.io/en/latest/ssmbak.restore.html#module-ssmbak.restore.actions)
 is well-tested.
@@ -37,7 +39,11 @@ ssmbak-stack $SSMBAK_STACKNAME create
 06/13/24 01:44:15   CREATE_COMPLETE  ssmbak  AWS::CloudFormation::Stack
 ```
 
-That's it. All new params will automatically be backed-up and available for ssmak point-in-time restore via CLI or lib. If you'd like previously set SSM params backups seeded, just run `ssmbak-all`. It'll print out what would be backed-up until you supply it with `--do-it`.
+That's it. All new params will automatically be backed-up and
+available for ssmbak point-in-time restore via CLI or lib. If you'd
+like previously set SSM params backups seeded, just run
+`ssmbak-all`. It'll print out what would be backed-up until you supply
+it with `--do-it`.
 
 # Tutorial CLI
 
@@ -247,7 +253,7 @@ This is a poetry project, so it should be butter once you get that sorted.
 # Testing
 Testing uses localstack, as you can see in the Github
 actions. `docker-compose up` should do the trick. Recent docker
-versions allow for --watch, allowing for hot-reloading of the lambda.
+versions allow for `--watch`, allowing for hot-reloading of the lambda.
 
 * Lambda tests use both the lambda's backup function and hitting the local
   container running it. Container tests are skipped in AWS.
