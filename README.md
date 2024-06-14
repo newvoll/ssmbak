@@ -9,6 +9,14 @@ enabled as a backend.
 Leverages AWS Eventbridge and Lambda. This project includes all the
 pieces to both backup and restore SSM Param paths and keys.
 
+* Backup: Eventbridge -> SQS queue -> Lambda -> S3
+  * launch cloudformation stack from template ssmbak/data/cfn.yml
+* Restore:
+  * pip install ssmbak
+    * ssmbak preview/restore cli
+	* from ssmbak.restore.actions import Path
+	* Path.prevew()
+
 A crude cli works, and the library is well-tested.
 
 https://readthedocs.org/projects/ssmbak/
