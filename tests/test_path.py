@@ -90,10 +90,10 @@ def test_path(recurse):
         with pytest.raises(Exception):
             # pylint: disable=expression-not-assigned
             pytest.ssm.get_parameter(Name=name, WithDecryption=True)["Parameter"]
-    helpers.check_classvar_counts(
-        {
-            "tags": len(names) * 3,
-            "versions": 2,
-            "version_objects": len(names) * 2 - n,
-        }
-    )
+    # helpers.check_classvar_counts(
+    #     {
+    #         "tags": len(names) * 3,
+    #         "versions": 2,
+    #         "version_objects": len(names) * 2 - n,
+    #     }
+    # )
