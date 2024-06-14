@@ -290,7 +290,7 @@ class Resource:
                 to_extend.extend(param_page["Versions"])
             except KeyError:
                 logger.debug("no versions")
-            if not recurse:
+            if not recurse or not key.endswith("/"):
                 logger.warning(f"key.count = {key.count('/')}")
                 logger.warning(
                     f"key.counts = {[x['Key'].count('/') for x in to_extend]}"
