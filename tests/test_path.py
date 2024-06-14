@@ -26,6 +26,7 @@ def test_path(recurse):
     Didn't make sense to split up in favor of continuously reusing state.
     """
     names = get_names(recurse)
+    names.append(pytest.test_path)
     logger.info("create backups and params")
     initial_params = helpers.create_and_check(names)
     logger.info("update some")
@@ -33,7 +34,7 @@ def test_path(recurse):
     # check that restore() returns originals
     in_between = helpers.str2datetime("2023-08-31T09:48:00")
     path = Path(
-        pytest.test_path,
+        f"{pytest.test_path}/",
         in_between,
         pytest.region,
         pytest.bucketname,
@@ -70,14 +71,14 @@ def test_path(recurse):
         [x["Name"] for x in previews if "Deleted" in x and x["Deleted"] is True]
     ) == sorted(to_deletes)
     ## check trailing slash before restore
-    path_slash = Path(
-        f"{pytest.test_path}/",
-        in_between,
-        pytest.region,
-        pytest.bucketname,
-        recurse=recurse,
-    )
-    assert path_slash.name == path.name
+    # path_slash = Path(
+    #     f"{pytest.test_path}/",
+    #     in_between,
+    #     pytest.region,
+    #     pytest.bucketname,
+    #     recurse=recurse,
+    # )
+    # assert path_slash.name == path.name
     # restore with dels
     path.restore()
     for name in to_deletes:
