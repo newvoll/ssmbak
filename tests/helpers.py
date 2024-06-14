@@ -132,11 +132,11 @@ def delete_params(names):
         ssmbak.backup(updated_action)
         deleted_params[name] = deleted_param
         logger.info("%s deleted", name)
+    # deleteds have no tags, so LastModified, thus sleep
     logger.info("sleeping at %s", datetime.now(tz=timezone.utc))
     n = 2
     time.sleep(n)
     deltime = datetime.now(tz=timezone.utc) - timedelta(0, n / 2)
-    # deleteds have no tags, so LastModified, thus sleep
     ## update one more
     for i, name in enumerate(names):
         what_type = "SecureString" if i % 5 == 0 else "String"
