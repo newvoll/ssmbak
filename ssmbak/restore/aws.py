@@ -206,16 +206,23 @@ class Resource:
         )
         result = paginated.build_full_result()
         keyed_params = {}
-        if "Parameters" in result:
+        if result["Parameters"]:
             params = result["Parameters"]
         else:
             try:
+                logger.warning(
+                    "looking for %s at %s",
+                    path,
+                    datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                )
                 param = self.ssm.get_parameter(Name=path, WithDecryption=True)[
                     "Parameter"
                 ]
+                logger.warning(param)
                 params = [param]
             except KeyError:  # nothing found
                 params = []
+        logger.warning(params)
         for name in {x["Name"] for x in params}:
             keyed_params[name] = [x for x in params if x["Name"] == name][0]
         return keyed_params
@@ -280,10 +287,13 @@ class Resource:
             to_extend = []
             try:
                 for deleted_version in param_page["DeleteMarkers"]:
+                    logger.warning(deleted_version)
                     # only need to delete if it's there now
                     if deleted_version["Key"] in there_nows:
                         deleted_version["Deleted"] = True
                         to_extend.append(deleted_version)
+                    else:
+                        logger.warning("%s not there now", deleted_version["Key"])
             except KeyError:
                 logger.debug("no delete markers")
             try:

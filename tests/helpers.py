@@ -134,6 +134,7 @@ def delete_params(names):
         logger.info("%s deleted", name)
     # deleteds have no tags, so LastModified, thus sleep
     logger.info("sleeping at %s", datetime.now(tz=timezone.utc))
+    # TODO: see if i can get rid of n
     n = 2
     time.sleep(n)
     deltime = datetime.now(tz=timezone.utc) - timedelta(0, n / 2)
@@ -148,6 +149,8 @@ def delete_params(names):
     # pylint: disable=fixme
     # TODO: test to make sure deleteds don't appear if not there_now?
     logger.info("done delete/update at %s", datetime.now(tz=timezone.utc))
+    logger.info("sleeping again")
+    time.sleep(n)
     return deltime, deleted_params
 
 

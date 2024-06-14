@@ -59,6 +59,7 @@ def test_key():
     logger.info("preview")
     previews = key.preview()
     assert [x["Name"] for x in previews] == [name]
+    logger.info(key)
     logger.info(helpers.pretty(previews))
     assert [x["Name"] for x in previews if "Deleted" in x and x["Deleted"] is True] == [
         name
