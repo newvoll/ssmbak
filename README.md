@@ -1,29 +1,29 @@
 # Intro
 
 The AWS SSM Parameter Store is simple and great for AWS config bits,
-but it only preserves 100 versions, 0 if the parameter has been
-deleted. To enable point-in-time restore, including deleted versions
-and entire recursive trees, we use an s3 bucket with versioning
-enabled as a backend.
+but SSM only preserves 100 versions, and maintains no record of
+deletion.
+
+To enable point-in-time restore, including deleted versions and entire
+recursive trees, we use an s3 bucket with versioning enabled as a
+backend.
 
 This project includes all the pieces to both backup and restore SSM
-Param paths and keys.
+Params.
 
 * Backup: Eventbridge -> SQS -> Lambda -> S3
   * launch cloudformation stack from
     [template](https://github.com/newvoll/ssmbak/blob/main/ssmbak/data/cfn.yml)
     with `ssmbak-stack <name> create`.
-* Restore:
-    * ssmbak preview/restore cli `ssmbak`
+* Restore with either:
+    * `ssmbak restore` cli, which uses
+	* the well-tested [library](https://ssmbak.readthedocs.io/en/latest/ssmbak.restore.html#module-ssmbak.restore.actions)
 ```
 from ssmbak.restore.actions import Path
 Path.prevew()
 ```
 
-A crude cli works, and [the library](https://ssmbak.readthedocs.io/en/latest/ssmbak.restore.html#module-ssmbak.restore.actions)
-is well-tested.
-
-Each code block is followed by another block of its output in this README.
+Code blocks are separated from their output by another block in this README for ease of copy/paste.
 
 # Quickstart
 ```
@@ -33,13 +33,13 @@ ssmbak-stack $SSMBAK_STACKNAME create
 ```
 
 That's it! All new params will automatically be backed-up and
-available for ssmbak point-in-time restore via CLI or lib.
+available for `ssmbak` point-in-time restore via CLI or lib.
 
 If you'd like previously set SSM params backups seeded, just run
 `ssmbak-all`. It'll print out what would be backed-up until you supply
-it with `--do-it`.
+it with `--do-it`. You can also supply `--prefix`.
 
-# Tutorial CLI
+# CLI Tutorial
 
 Once the stack is up and new params are backed-up automatically, you can go through the following steps to give you a feel for how it works.
 
@@ -194,7 +194,7 @@ You can now seed backups for all previously set SSM Params with
 `ssmbak-all`. It will just show you what would be backed-up. `--do-it`
 to actually perform the backups.
 
-## CLI Gotchas:
+### CLI Gotchas:
 * You need a bunch of shady permissions to create the stack. Look for such errors if it fails.
 * `aws` commands require that the awscli is installed and configured.
 
@@ -207,9 +207,9 @@ to actually perform the backups.
 `-h` for more info.
 
 
-# Lib Quickstart
+# Lib Tutorial
 
-Use the cli to get the bucketname, or check the stack resources.
+Use the cli to get the bucketname, or check the stack resources with your preferred method.
 ```
 ssmbak-stack ssmbak bucketname
 ```
