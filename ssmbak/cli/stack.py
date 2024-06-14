@@ -82,7 +82,7 @@ def _do_cfn(region):
         template_file = f"{template_dir}/data/cfn.yml"
         getattr(stack, args.command)(template_file, {"Version": version("ssmbak")})
         yay = stack.watch()
-        if yay:
+        if yay and args.command == "create":
             print()
             print(f"Lambda: {stack.lambdaname}")
             print(f"Bucket: {stack.bucketname}")
@@ -93,7 +93,7 @@ def _do_cfn(region):
                 "list if not"
             )
             print()
-        else:
+        elif args.command == "create":
             print(
                 "Check the error messages above. Are you sure you have enough privs"
                 "to create all those resources?"
