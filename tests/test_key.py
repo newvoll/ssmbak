@@ -35,17 +35,7 @@ def test_key():
     }
     logger.info("restore, which uses preview")
     assert key.restore() == previews
-    ssm_param = pytest.ssm.get_parameter(Name=name, WithDecryption=True)["Parameter"]
-    assert ssm_param["Value"] == initial_params[ssm_param["Name"]]["Value"]
-    assert ssm_param["Type"] == initial_params[ssm_param["Name"]]["Type"]
-    param_desc = pytest.ssm.describe_parameters(
-        ParameterFilters=[{"Key": "Name", "Option": "Equals", "Values": [name]}]
-    )["Parameters"][0]
-    if "Description" in initial_params[ssm_param["Name"]]:
-        assert (
-            param_desc["Description"]
-            == initial_params[ssm_param["Name"]]["Description"]
-        )
+    helpers.check_param(name, initial_params)
     # deleted
     deltime, deleted_params = helpers.delete_params([name])
     logger.info("deleted_params %s", deleted_params)

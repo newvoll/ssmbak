@@ -147,6 +147,18 @@ def delete_params(names):
     return deltime, deleted_params
 
 
+def check_param(name, params):
+    """Check a single param against a list of keyed dicts"""
+    ssm_param = pytest.ssm.get_parameter(Name=name, WithDecryption=True)["Parameter"]
+    assert ssm_param["Value"] == params[ssm_param["Name"]]["Value"]
+    assert ssm_param["Type"] == params[ssm_param["Name"]]["Type"]
+    param_desc = pytest.ssm.describe_parameters(
+        ParameterFilters=[{"Key": "Name", "Option": "Equals", "Values": [name]}]
+    )["Parameters"][0]
+    if "Description" in params[ssm_param["Name"]]:
+        assert param_desc["Description"] == params[ssm_param["Name"]]["Description"]
+
+
 def create_and_check(names):
     """Seeds a test with a bunch of params for names.
 
