@@ -91,7 +91,10 @@ class Path(Resource):
         """
         versions = self.get_versions()
         names = list(set(versions))
-        return names
+        if self.name in names and not self.recurse:  # if it's a key and not a path
+            return [self.name]
+        else:
+            return names
 
     def get_versions(self) -> dict[str, Version]:
         """Grabs the verbose versions most recent relative to checktime.
