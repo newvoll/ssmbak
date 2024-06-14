@@ -72,7 +72,6 @@ class Path(Resource):
         self.versions = {}
         super().__init__(region, bucketname)
 
-    # TODO: clean this up
     def __repr__(self):
         return (
             f"{self.__class__.__name__}({self.name}, "
