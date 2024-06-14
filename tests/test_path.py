@@ -26,9 +26,10 @@ def test_path(recurse):
     Didn't make sense to split up in favor of continuously reusing state.
     """
     names = get_names(recurse)
-    names.append(pytest.test_path)
     logger.info("create backups and params")
     initial_params = helpers.create_and_check(names)
+    # set a path that's also a key but don't include
+    helpers.create_and_check([pytest.test_path])
     logger.info("update some")
     helpers.update_and_check(names)
     # check that restore() returns originals
@@ -59,7 +60,7 @@ def test_path(recurse):
     logger.debug("deleted_params %s", deleted_params)
     logger.info("same path, new object with deltime: %s", deltime)
     path = Path(
-        pytest.test_path,
+        f"{pytest.test_path}/",
         deltime,
         pytest.region,
         pytest.bucketname,

@@ -291,8 +291,12 @@ class Resource:
             except KeyError:
                 logger.debug("no versions")
             if not recurse:
+                logger.warning(f"key.count = {key.count('/')}")
+                logger.warning(
+                    f"key.counts = {[x['Key'].count('/') for x in to_extend]}"
+                )
                 to_extend = [
-                    x for x in to_extend if x["Key"].count("/") <= key.count("/") + 1
+                    x for x in to_extend if x["Key"].count("/") == key.count("/")
                 ]
             for version in to_extend:
                 if version["Key"] not in [x["Key"] for x in versions]:
