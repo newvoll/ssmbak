@@ -42,7 +42,7 @@ def test_path(recurse):
     )
     logger.info("preview")
     previews = path.preview()
-    assert sorted([x["Name"] for x in previews]) == sorted(names)
+    assert [x["Name"] for x in previews] == sorted(names)
     helpers.compare_previews_with_params(previews, initial_params)
     assert {x["Modified"] for x in previews} == {
         datetime(2022, 8, 3, 21, 9, 31, tzinfo=timezone.utc)
