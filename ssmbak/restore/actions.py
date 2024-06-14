@@ -66,6 +66,7 @@ class Path(Resource):
           bucketname: The same bucket that the lambda writes to.
           recurse: operate on all paths/keys under name/
         """
+        # TODO: update args for path/ and :param
         self.name = name  # .rstrip("/")
         self.checktime = checktime
         self.recurse = recurse
