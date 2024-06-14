@@ -72,15 +72,17 @@ def test_path(recurse):
     assert sorted(
         [x["Name"] for x in previews if "Deleted" in x and x["Deleted"] is True]
     ) == sorted(to_deletes)
-    ## check trailing slash before restore
-    # path_slash = Path(
-    #     f"{pytest.test_path}/",
-    #     in_between,
-    #     pytest.region,
-    #     pytest.bucketname,
-    #     recurse=recurse,
-    # )
-    # assert path_slash.name == path.name
+    ## check no trailing slash before restore
+    path_noslash = Path(
+        f"{pytest.test_path}",
+        in_between,
+        pytest.region,
+        pytest.bucketname,
+        recurse=recurse,
+    )
+    previews = path.preview()
+    logger.warning(helpers.pretty(previews))
+    assert len(previews) == 1
     # restore with dels
     path.restore()
     for name in to_deletes:

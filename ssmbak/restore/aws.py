@@ -295,9 +295,12 @@ class Resource:
                 logger.warning(
                     f"key.counts = {[x['Key'].count('/') for x in to_extend]}"
                 )
-                to_extend = [
-                    x for x in to_extend if x["Key"].count("/") == key.count("/")
-                ]
+                if key in [x["Key"] for x in to_extend + versions]:
+                    logger.warning("in there")
+                    n = key.count("/") - 1
+                else:
+                    n = key.count("/")
+                to_extend = [x for x in to_extend if x["Key"].count("/") == n]
             for version in to_extend:
                 if version["Key"] not in [x["Key"] for x in versions]:
                     version["tagset"] = self._get_tagset(
