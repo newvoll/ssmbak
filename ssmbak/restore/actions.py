@@ -9,12 +9,16 @@ bunch. You can choose whether to operate on the path recursively
 Typical usage example:
 
 from ssmbak.restore.actions import Path
+
 from datetime import datetime, timezone
 
-* point_in_time = datetime(2023, 8, 3, 21, 9, 31, tzinfo=timezone.utc)
-* path = Path("/some/ssm/path", point_in_time, "us-west-2", mys3bucket, recurse=True)
-* previews = path.preview()
-* path.restore()  #  == previews
+point_in_time = datetime(2023, 8, 3, 21, 9, 31, tzinfo=timezone.utc)
+
+path = Path("/some/ssm/path", point_in_time, "us-west-2", mys3bucket, recurse=True)
+
+previews = path.preview()
+
+path.restore()  #  == previews
 """
 
 import logging
@@ -36,10 +40,10 @@ class Path(Resource):
     have to instantiate a Path object for each one.
 
     Attributes:
-      name: A string of the ssm/s3 key or path
-      checktime: the point in time for which to retrieve relative latest version
-      recurse: A boolean to operate on all paths/keys under name/
-      versions: A cache used for preview/restore, starts empty
+      :param name: A string of the ssm/s3 key or path
+      :param checktime: the point in time for which to retrieve relative latest version
+      :param recurse: A boolean to operate on all paths/keys under name/
+      :param versions: A cache used for preview/restore, starts empty
     """
 
     def __init__(  # pylint: disable=too-many-arguments

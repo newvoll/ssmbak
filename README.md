@@ -17,16 +17,14 @@ pieces to both backup and restore SSM Param paths and keys.
 	* from ssmbak.restore.actions import Path
 	* Path.prevew()
 
-A crude cli works, and the library is well-tested.
+A crude cli works, and [the library](https://ssmbak.readthedocs.io/en/latest/ssmbak.restore.html#module-ssmbak.restore.actions)
+is well-tested.
 
-https://readthedocs.org/projects/ssmbak/
 
 
-# CLI Quickstart
-You'll need the awscli and credentials that can create IAM resources
-(to assign minimal permissions to the lambda role). Each code block is
-followed by another block of its output.
+Each code block is followed by another block of its output.
 
+# Quickstart
 ```
 pip install ssmbak
 SSMBAK_STACKNAME=ssmbak
@@ -38,6 +36,15 @@ ssmbak-stack $SSMBAK_STACKNAME create
 ...
 06/13/24 01:44:15   CREATE_COMPLETE  ssmbak  AWS::CloudFormation::Stack
 ```
+
+That's it. All new params will automatically be backed-up and available for ssmak point-in-time restore via CLI or lib. If you'd like previously set SSM params backups seeded, just run `ssmbak-all`. It'll print out what would be backed-up until you supply it with `--do-it`.
+
+# Tutorial CLI
+
+Once the stack is up and new params are backed-up automatically, you can go through the following steps to give you a feel for how it works.
+
+You'll need the awscli and credentials that can create IAM resources
+(to assign minimal permissions to the lambda role).
 
 Create some params with value `initial` in `testyssmbak/` and `testyssmbak/deeper` to show recursion:
 ```
@@ -204,11 +211,15 @@ to actually perform the backups.
 
 # Lib Quickstart
 
+Use the cli to get the bucketname, or check the stack resources.
 ```
 ssmbak-stack ssmbak bucketname
-ssmbak-bucket-dkvp9oegrx2y
-python
 ```
+```
+ssmbak-bucket-dkvp9oegrx2y
+```
+
+Session:
 ```
 >>> from ssmbak.restore.actions import Path
 
