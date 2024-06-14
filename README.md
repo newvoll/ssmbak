@@ -11,6 +11,9 @@ pieces to both backup and restore SSM Param paths and keys.
 
 A crude cli works, and the library is well-tested.
 
+https://readthedocs.org/projects/ssmbak/
+
+
 # CLI Quickstart
 You'll need the awscli and credentials that can create IAM resources
 (to assign minimal permissions to the lambda role). Each code block is
