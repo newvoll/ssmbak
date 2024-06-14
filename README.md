@@ -6,13 +6,14 @@ deleted. To enable point-in-time restore, including deleted versions
 and entire recursive trees, we use an s3 bucket with versioning
 enabled as a backend.
 
-Leverages AWS Eventbridge and Lambda. This project includes all the
-pieces to both backup and restore SSM Param paths and keys.
+This project includes all the pieces to both backup and restore SSM
+Param paths and keys.
 
-* Backup: Eventbridge -> SQS queue -> Lambda -> S3
-  * launch cloudformation stack from template ssmbak/data/cfn.yml
+* Backup: Eventbridge -> SQS -> Lambda -> S3
+  * launch cloudformation stack from
+    [template](https://github.com/newvoll/ssmbak/blob/main/ssmbak/data/cfn.yml)
+    with `ssmbak-stack <name> create`.
 * Restore:
-  * `pip install ssmbak`
     * ssmbak preview/restore cli `ssmbak`
 ```
 from ssmbak.restore.actions import Path
@@ -22,9 +23,7 @@ Path.prevew()
 A crude cli works, and [the library](https://ssmbak.readthedocs.io/en/latest/ssmbak.restore.html#module-ssmbak.restore.actions)
 is well-tested.
 
-
-
-Each code block is followed by another block of its output.
+Each code block is followed by another block of its output in this README.
 
 # Quickstart
 ```
@@ -33,15 +32,10 @@ SSMBAK_STACKNAME=ssmbak
 ssmbak-stack $SSMBAK_STACKNAME create
 ```
 
-```
-06/13/24 01:43:05   CREATE_IN_PROGRESS  ssmbak  AWS::CloudFormation::Stack  User Initiated
-...
-06/13/24 01:44:15   CREATE_COMPLETE  ssmbak  AWS::CloudFormation::Stack
-```
+That's it! All new params will automatically be backed-up and
+available for ssmbak point-in-time restore via CLI or lib.
 
-That's it. All new params will automatically be backed-up and
-available for ssmbak point-in-time restore via CLI or lib. If you'd
-like previously set SSM params backups seeded, just run
+If you'd like previously set SSM params backups seeded, just run
 `ssmbak-all`. It'll print out what would be backed-up until you supply
 it with `--do-it`.
 
@@ -196,8 +190,6 @@ aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@hee=
 /testyssmbak/deeper/3 		 initial
 ```
 
-That's it!
-
 You can now seed backups for all previously set SSM Params with
 `ssmbak-all`. It will just show you what would be backed-up. `--do-it`
 to actually perform the backups.
@@ -252,11 +244,17 @@ This is a poetry project, so it should be butter once you get that sorted.
 
 # Testing
 Testing uses localstack, as you can see in the Github
-actions. `docker-compose up` should do the trick. Recent docker
-versions allow for `--watch`, allowing for hot-reloading of the lambda.
+actions. `docker-compose up` should do the trick.
 
-* Lambda tests use both the lambda's backup function and hitting the local
-  container running it. Container tests are skipped in AWS.
+* After `poetry shell`, you can just `./tests/tests/test_localstack.sh`.
+
+* `source tests/localstack_env.sh` to point ssmbak to localstack.
+
+* Recent docker versions allow for `docker-compose up --watch`, allowing for
+hot-reloading of the lambda.
+
+* Lambda tests use both the lambda's backup function and hitting the
+  local container running it. Container tests are skipped in AWS.
 
 
 ## Testing Gotchas
