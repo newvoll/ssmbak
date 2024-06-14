@@ -1,9 +1,17 @@
 name: Test
 
-on: [push]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [ready_for_review, review_requested]
+    branches:
+      - main
 
 jobs:
   build:
+    if: '! github.event.pull_request.draft'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
