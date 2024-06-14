@@ -1,5 +1,3 @@
-# Intro
-
 The AWS SSM Parameter Store is simple and great for AWS config bits,
 but SSM only preserves 100 versions, and maintains no record of
 deletion.
