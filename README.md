@@ -161,7 +161,7 @@ ssmbak preview /testyssmbak/ $IN_BETWEEN --recursive
 Do the restore:
 
 ```
-ssmbak restore /testyssmbak $IN_BETWEEN --recursive
+ssmbak restore /testyssmbak/ $IN_BETWEEN --recursive
 ```
 
 ```
@@ -181,7 +181,7 @@ ssmbak restore /testyssmbak $IN_BETWEEN --recursive
 And now they're all back to `initial`:
 
 ```
-aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@hee=split; print "$hee[4] \t\t $hee[6]\n";'
+aws ssm get-parameters-by-path --path /testyssmbak/ --recursive | perl -ne '@hee=split; print "$hee[4] \t\t $hee[6]\n";'
 ```
 
 ```
