@@ -138,7 +138,7 @@ When we preview the IN_BETWEEN point-in-time, we see that everything
 was `initial` at that time.
 
 > [!NOTE]
-> Paths end with a slash. You can set /some/path=value and also have /some/path/key=something.
+> Paths end with a slash. You can set `/some/path=value` and also have `/some/path/key=somethingelse`.
 
 ```
 ssmbak preview /testyssmbak/ $IN_BETWEEN --recursive
