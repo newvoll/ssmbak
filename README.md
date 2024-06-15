@@ -96,10 +96,9 @@ aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@h=sp
 ```
 
 
-The lambda is configured to write logs to cloudwatch. SSMBAK_STACKNAME is whatever you chose for `ssmbak-stack <SSMBAK_STACKNAME> create`.
+The lambda is configured to write logs to cloudwatch.
 
 ```
-SSMBAK_STACKNAME=ssmbak
 SSMBAK_LAMBDANAME=`ssmbak-stack $SSMBAK_STACKNAME lambdaname`
 aws logs tail --format short /aws/lambda/$SSMBAK_LAMBDANAME
 ```
