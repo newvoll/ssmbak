@@ -44,6 +44,11 @@ it with `--do-it`. You can also supply `--prefix`.
 
 Once the stack is up and new params are backed-up automatically, you can go through the following steps to give you a feel for how it works.
 
+Let's mark the start time for cleanup afterward:
+```
+START_TIME=`date -u +"%Y-%m-%dT%H:%M:%S"`
+```
+
 Create some params with value `initial` in `testyssmbak/` and `testyssmbak/deeper` to show recursion:
 ```
 for i in $(seq 3)
