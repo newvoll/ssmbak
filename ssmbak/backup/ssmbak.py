@@ -73,6 +73,9 @@ def backup(action: dict) -> int:
         logger.critical("SSMBAK_BUCKET env var must be set! Dying...")
         sys.exit(1)
     logger.debug("action: %s", action)
+    if not action["name"].startswith("/"):  # PREPEND
+        logger.debug(f"prepending {action['name']} with a /")
+        action["name"] = f"/{action['name']}"
     s3 = boto3.client("s3", endpoint_url=os.getenv("AWS_ENDPOINT"))
     ssm = boto3.client("ssm", endpoint_url=os.getenv("AWS_ENDPOINT"))
     kwargs = {"Bucket": bucketname, "Key": action["name"]}
@@ -80,8 +83,6 @@ def backup(action: dict) -> int:
         method = "delete_object"
     else:
         method = "put_object"
-        if not action["name"].startswith("/"):  # PREPEND
-            action["name"] = f"/{action['name']}"
         ssm_kwargs = {"Name": action["name"], "WithDecryption": True}
         try:
             response = ssm.get_parameter(**ssm_kwargs)

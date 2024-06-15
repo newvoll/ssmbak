@@ -30,7 +30,8 @@ def test_key_not_path():
 
 def test_key_not_path_root():
     """Makes sure a key doesn't return all keys that start with it"""
-    name = f"{pytest.test_path}"
+    name = pytest.test_path.lstrip("/")
+    logger.warning(name)
     initial_params = helpers.create_and_check([name])
     # helpers.update_and_check([name])
     in_between = helpers.str2datetime("2023-08-31T09:48:00")
