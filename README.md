@@ -44,11 +44,6 @@ it with `--do-it`. You can also supply `--prefix`.
 
 Once the stack is up and new params are backed-up automatically, you can go through the following steps to give you a feel for how it works.
 
-Let's mark the start time for cleanup afterward:
-```
-START_TIME=`date -u +"%Y-%m-%dT%H:%M:%S"`
-```
-
 Create some params with value `initial` in `testyssmbak/` and `testyssmbak/deeper` to show recursion:
 ```
 for i in $(seq 3)
@@ -123,6 +118,12 @@ Standard        2
 ```
 
 
+Let's mark the time for later:
+
+```
+UPDATED_MARK=`date -u +"%Y-%m-%dT%H:%M:%S"
+```
+
 Now #2 for each is set to `UPDATED`:
 
 ```
@@ -196,6 +197,68 @@ aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@h=sp
 /testyssmbak/deeper/1 		 initial
 /testyssmbak/deeper/2 		 initial
 /testyssmbak/deeper/3 		 initial
+```
+
+Let's say we made a mistake and want to revert one of the UPDATED keys:
+
+```
+ssmbak preview /testyssmbak/deeper/2 $UPDATED_MARK --recursive
+```
+```
++-----------------------+---------+--------+---------------------------+
+| Name                  | Value   | Type   | Modified                  |
++-----------------------+---------+--------+---------------------------+
+| /testyssmbak/deeper/2 | UPDATED | String | 2024-06-15 16:38:24+00:00 |
++-----------------------+---------+--------+---------------------------+
+```
+
+And restore:
+
+```
+% ssmbak restore /testyssmbak/deeper/2 $UPDATED_MARK
+```
+```
++-----------------------+---------+--------+---------------------------+
+| Name                  | Value   | Type   | Modified                  |
++-----------------------+---------+--------+---------------------------+
+| /testyssmbak/deeper/2 | UPDATED | String | 2024-06-15 16:38:24+00:00 |
++-----------------------+---------+--------+---------------------------+
+```
+
+Voila. Just `/testyssmbak/deeper/2` is UPDATED.
+
+```
+% aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@h=split; print "$h[4] \t\t $h[6]\n";'
+```
+```
+/testyssmbak/1 		 initial
+/testyssmbak/2 		 initial
+/testyssmbak/3 		 initial
+/testyssmbak/deeper/1 		 initial
+/testyssmbak/deeper/2 		 UPDATED
+/testyssmbak/deeper/3 		 initial
+```
+
+Let's mark the time and clean up our SSM tree:
+
+```
+END_MARK=`date -u +"%Y-%m-%dT%H:%M:%S" && aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@h=split; print "$h[4] ";' | xargs aws ssm delete-parameters --names && sleep 30
+```
+```
+DELETEDPARAMETERS       /testyssmbak/1
+DELETEDPARAMETERS       /testyssmbak/2
+DELETEDPARAMETERS       /testyssmbak/3
+DELETEDPARAMETERS       /testyssmbak/deeper/1
+DELETEDPARAMETERS       /testyssmbak/deeper/2
+DELETEDPARAMETERS       /testyssmbak/deeper/3
+```
+
+And pretend we made a mistake. Oh no! We want them all back:
+
+```
+
+```
+```
 ```
 
 You can now seed backups for all previously set SSM Params with
