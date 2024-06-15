@@ -44,7 +44,7 @@ it with `--do-it`. You can also supply `--prefix`.
 
 ```
 SSMBAK_STACKNAME=ssmbak
-ssmbak-stack $SSMBAK_STACKNAME$ create
+ssmbak-stack $SSMBAK_STACKNAME create
 ```
 ```
 06/15/24 17:25:25   CREATE_IN_PROGRESS  ssmbak  AWS::CloudFormation::Stack  User Initiated
