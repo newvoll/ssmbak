@@ -29,7 +29,7 @@ def test_noparams():
         pytest.bucketname,
     )
     logger.warning(path)
-    previews = path.preview()
+    path.preview()
 
 
 @pytest.mark.parametrize("recurse", [True, False])
@@ -67,7 +67,7 @@ def test_path(recurse):
     for name in names:
         helpers.check_param(name, initial_params)
     n, to_deletes = helpers.delete_some(3, names)
-    logger.info("delete %s", to_deletes)
+    logger.info("delete %s (%s)", to_deletes, n)
     ## for deleted, check that it worked
     deltime, deleted_params = helpers.delete_params(to_deletes)
     logger.debug("deleted_params %s", deleted_params)

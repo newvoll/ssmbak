@@ -51,7 +51,7 @@ def process_message(body: str) -> dict[str, Union[str, datetime]]:
     if "description" in message["detail"]:
         action["description"] = message["detail"]["description"]
     if not action["name"].startswith("/"):  # PREPEND
-        logger.debug(f"prepending {action['name']} with a /")
+        logger.debug("prepending %s with a /", action["name"])
         action["name"] = f"/{action['name']}"
     return action
 
