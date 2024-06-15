@@ -26,6 +26,7 @@ def test_key_not_path():
     )
     previews = key.preview()
     assert [x["Name"] for x in previews] == [name]
+    helpers.compare_previews_with_params(previews, initial_params)
 
 
 def test_key_not_path_root():
@@ -33,7 +34,6 @@ def test_key_not_path_root():
     name = pytest.test_path.lstrip("/")
     logger.warning(name)
     initial_params = helpers.create_and_check([name])
-    # helpers.update_and_check([name])
     in_between = helpers.str2datetime("2023-08-31T09:48:00")
     key = Path(
         name,
