@@ -208,7 +208,7 @@ class Resource:
         keyed_params = {}
         if result["Parameters"]:
             params = result["Parameters"]
-        else:
+        elif not path.endswith("/"):
             try:
                 param = self.ssm.get_parameter(Name=path, WithDecryption=True)[
                     "Parameter"
@@ -216,6 +216,8 @@ class Resource:
                 params = [param]
             except KeyError:  # nothing found
                 params = []
+        else:
+            params = []
         for name in {x["Name"] for x in params}:
             keyed_params[name] = [x for x in params if x["Name"] == name][0]
         return keyed_params

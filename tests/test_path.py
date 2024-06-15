@@ -19,6 +19,19 @@ def get_names(recurse):
     return names
 
 
+def test_noparams():
+    """Make sure doesn't bomb when no params are there_now."""
+    in_between = helpers.str2datetime("2023-08-31T09:48:00")
+    path = Path(
+        f"{pytest.test_path}/",
+        in_between,
+        pytest.region,
+        pytest.bucketname,
+    )
+    logger.warning(path)
+    previews = path.preview()
+
+
 @pytest.mark.parametrize("recurse", [True, False])
 def test_path(recurse):
     """Parametrized for recurse and not.
