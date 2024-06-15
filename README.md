@@ -233,7 +233,10 @@ aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@h=sp
 Let's mark the time and clean up our SSM tree:
 
 ```
-END_MARK=`date -u +"%Y-%m-%dT%H:%M:%S" && aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@h=split; print "$h[4] ";' | xargs aws ssm delete-parameters --names && sleep 30
+END_MARK=`date -u +"%Y-%m-%dT%H:%M:%S"`
+aws ssm get-parameters-by-path --path /testyssmbak --recursive \
+  | perl -ne '@h=split; print "$h[4] ";' \
+  | xargs aws ssm delete-parameters --names && sleep 30
 ```
 ```
 DELETEDPARAMETERS       /testyssmbak/1
