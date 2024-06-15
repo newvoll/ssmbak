@@ -54,8 +54,9 @@ ssmbak-stack $SSMBAK_STACKNAME create
 
 Once the stack is up and new params are backed-up automatically, you can go through the following steps to give you a feel for how it works.
 
-Create some params with value `initial` in `testyssmbak/` and `testyssmbak/deeper` to show recursion:
+Create some params with value `initial` in `/testyssmbak/` and `/testyssmbak/deeper` to show recursion. We'll also set key `/testyssmbak` to show the difference between keys and paths.
 ```
+aws ssm put-parameter --name /testyssmbak --value initial --type String --overwrite
 for i in $(seq 3)
 do
 aws ssm put-parameter --name /testyssmbak/$i --value initial --type String --overwrite
@@ -70,6 +71,7 @@ Standard        1
 Standard        1
 Standard        1
 Standard        1
+Standard        1
 ```
 
 Sleep a bit to give EventBridge some time to process the event, mark
@@ -77,16 +79,19 @@ it (UTC), and sleep some more to give ssmbak some time to back them
 up.
 
 ```
-sleep 30 && IN_BETWEEN=`date -u +"%Y-%m-%dT%H:%M:%S"` && sleep 30
+sleep 30
+IN_BETWEEN=`date -u +"%Y-%m-%dT%H:%M:%S"`
+sleep 30
 ```
 
 They're all set to `inital`.
 
 ```
-aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@h=split; print "$h[4] \t\t $h[6]\n";'
+aws ssm get-parameters-by-path --path /testyssmbak --recursive \
+  | perl -ne '@h=split; print "$h[4] \t\t $h[6]\n";'
 ```
-
 ```
+/testyssmbak 		 initial
 /testyssmbak/1 		 initial
 /testyssmbak/2 		 initial
 /testyssmbak/3 		 initial
@@ -99,8 +104,10 @@ aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@h=sp
 Update #2 for path and subpath:
 
 ```
-aws ssm put-parameter --name /testyssmbak/2 --value UPDATED --type String --overwrite
-aws ssm put-parameter --name /testyssmbak/deeper/2 --value UPDATED --type String --overwrite
+aws ssm put-parameter --name /testyssmbak/2 --value UPDATED \
+  --type String --overwrite
+aws ssm put-parameter --name /testyssmbak/deeper/2 --value UPDATED \
+  --type String --overwrite
 ```
 
 ```
@@ -118,7 +125,8 @@ UPDATED_MARK=`date -u +"%Y-%m-%dT%H:%M:%S"`
 Now #2 for each is set to `UPDATED`:
 
 ```
-aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@h=split; print "$h[4] \t\t $h[6]\n";'
+aws ssm get-parameters-by-path --path /testyssmbak --recursive \
+  | perl -ne '@h=split; print "$h[4] \t\t $h[6]\n";'
 ```
 
 ```
@@ -135,7 +143,9 @@ When we preview the IN_BETWEEN point-in-time, we see that everything
 was `initial` at that time.
 
 > [!NOTE]
-> Paths end with a slash. You can set `/some/path=value` and also have `/some/path/key=somethingelse`.
+> Paths end with a slash. You can set `/some/path=value` and also have
+> `/some/path/key=somethingelse`. That's why key `/testyssmbak` won't
+> show up in the preview below.
 
 ```
 ssmbak preview /testyssmbak/ $IN_BETWEEN --recursive
@@ -178,7 +188,8 @@ ssmbak restore /testyssmbak/ $IN_BETWEEN --recursive
 And now they're all back to `initial`:
 
 ```
-aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@h=split; print "$h[4] \t\t $h[6]\n";'
+aws ssm get-parameters-by-path --path /testyssmbak --recursive \
+  | perl -ne '@h=split; print "$h[4] \t\t $h[6]\n";'
 ```
 
 ```
@@ -219,7 +230,8 @@ ssmbak restore /testyssmbak/deeper/2 $UPDATED_MARK
 Voila. Just `/testyssmbak/deeper/2` is `UPDATED`.
 
 ```
-aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@h=split; print "$h[4] \t\t $h[6]\n";'
+aws ssm get-parameters-by-path --path /testyssmbak --recursive \
+  | perl -ne '@h=split; print "$h[4] \t\t $h[6]\n";'
 ```
 ```
 /testyssmbak/1 		 initial
@@ -240,6 +252,7 @@ aws ssm get-parameters-by-path --path /testyssmbak --recursive \
 sleep 30
 ```
 ```
+DELETEDPARAMETERS       /testyssmbak
 DELETEDPARAMETERS       /testyssmbak/1
 DELETEDPARAMETERS       /testyssmbak/2
 DELETEDPARAMETERS       /testyssmbak/3
