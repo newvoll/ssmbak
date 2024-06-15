@@ -255,7 +255,19 @@ sleep 30
 ssmbak preview /testyssmbak/ $END_MARK --recursive
 ```
 ```
++-----------------------+---------+--------+---------------------------+
+| Name                  | Value   | Type   | Modified                  |
++-----------------------+---------+--------+---------------------------+
+| /testyssmbak/1        | initial | String | 2024-06-15 17:34:37+00:00 |
+| /testyssmbak/2        | initial | String | 2024-06-15 17:34:37+00:00 |
+| /testyssmbak/3        | initial | String | 2024-06-15 17:34:37+00:00 |
+| /testyssmbak/deeper/1 | initial | String | 2024-06-15 17:34:37+00:00 |
+| /testyssmbak/deeper/2 | UPDATED | String | 2024-06-15 17:35:27+00:00 |
+| /testyssmbak/deeper/3 | initial | String | 2024-06-15 17:34:37+00:00 |
++-----------------------+---------+--------+---------------------------+
 ```
+
+We won't do the restore after all and stay cleaned-up.
 
 You can now seed backups for all previously set SSM Params with
 `ssmbak-all`. It will just show you what would be backed-up. `--do-it`
