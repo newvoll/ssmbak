@@ -65,6 +65,7 @@ def test_process_message():
 
 @pytest.mark.parametrize("backup_source", [local_lambda, ssmbak])
 def test_backup_create_root_pathkey(backup_source):
+    """Tests for bug in ssm for root-level keys. See ssmbak.py for details"""
     noslash = pytest.test_path.lstrip("/").rstrip("/")
     if backup_source == local_lambda and not pytest.check_local():
         pytest.skip()
