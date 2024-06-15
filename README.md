@@ -96,24 +96,6 @@ aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@h=sp
 ```
 
 
-The lambda is configured to write logs to cloudwatch.
-
-```
-SSMBAK_LAMBDANAME=`ssmbak-stack $SSMBAK_STACKNAME lambdaname`
-aws logs tail --format short /aws/lambda/$SSMBAK_LAMBDANAME
-```
-
-```
-2024-06-13T20:11:07 INIT_START Runtime Version: python:3.10.v36	Runtime Version ARN: arn:aws:lambda:us-west-2::runtime:bbd47e5ef4020932b9374e2ab9f9ed3bac502f27e17a031c35d9fb8935cf1f8c
-2024-06-13T20:11:07 START RequestId: d404f4c7-1c53-5e41-a7db-aa2248dee8cd Version: $LATEST
-2024-06-13T20:11:10 [INFO]	2024-06-13T20:11:10.776Z	d404f4c7-1c53-5e41-a7db-aa2248dee8cd	put_object {'Bucket': 'ssmbak-bucket-vhvs73zpfvy5', 'Key': '/testyssmbak/3', 'Tagging': 'ssmbakTime=1718309456&ssmbakType=String', 'Body': 'initial'}
-2024-06-13T20:11:10 [INFO]	2024-06-13T20:11:10.964Z	d404f4c7-1c53-5e41-a7db-aa2248dee8cd	result: 200
-2024-06-13T20:11:11 END RequestId: d404f4c7-1c53-5e41-a7db-aa2248dee8cd
-2024-06-13T20:11:11 REPORT RequestId: d404f4c7-1c53-5e41-a7db-aa2248dee8cd	Duration: 3430.49 ms	Billed Duration: 3431 ms	Memory Size: 128 MB	Max Memory Used: 84 MB	Init Duration: 282.28 ms
-...
-```
-
-
 Update #2 for path and subpath:
 
 ```
@@ -130,7 +112,7 @@ Standard        2
 Let's mark the time for later:
 
 ```
-UPDATED_MARK=`date -u +"%Y-%m-%dT%H:%M:%S"
+UPDATED_MARK=`date -u +"%Y-%m-%dT%H:%M:%S"`
 ```
 
 Now #2 for each is set to `UPDATED`:
@@ -274,6 +256,25 @@ ssmbak preview /testyssmbak/ $END_MARK --recursive
 You can now seed backups for all previously set SSM Params with
 `ssmbak-all`. It will just show you what would be backed-up. `--do-it`
 to actually perform the backups.
+
+
+The lambda is configured to write logs to cloudwatch.
+
+```
+SSMBAK_LAMBDANAME=`ssmbak-stack $SSMBAK_STACKNAME lambdaname`
+aws logs tail --format short /aws/lambda/$SSMBAK_LAMBDANAME
+```
+
+```
+2024-06-13T20:11:07 INIT_START Runtime Version: python:3.10.v36	Runtime Version ARN: arn:aws:lambda:us-west-2::runtime:bbd47e5ef4020932b9374e2ab9f9ed3bac502f27e17a031c35d9fb8935cf1f8c
+2024-06-13T20:11:07 START RequestId: d404f4c7-1c53-5e41-a7db-aa2248dee8cd Version: $LATEST
+2024-06-13T20:11:10 [INFO]	2024-06-13T20:11:10.776Z	d404f4c7-1c53-5e41-a7db-aa2248dee8cd	put_object {'Bucket': 'ssmbak-bucket-vhvs73zpfvy5', 'Key': '/testyssmbak/3', 'Tagging': 'ssmbakTime=1718309456&ssmbakType=String', 'Body': 'initial'}
+2024-06-13T20:11:10 [INFO]	2024-06-13T20:11:10.964Z	d404f4c7-1c53-5e41-a7db-aa2248dee8cd	result: 200
+2024-06-13T20:11:11 END RequestId: d404f4c7-1c53-5e41-a7db-aa2248dee8cd
+2024-06-13T20:11:11 REPORT RequestId: d404f4c7-1c53-5e41-a7db-aa2248dee8cd	Duration: 3430.49 ms	Billed Duration: 3431 ms	Memory Size: 128 MB	Max Memory Used: 84 MB	Init Duration: 282.28 ms
+...
+```
+
 
 ### CLI Gotchas:
 * You need a bunch of shady permissions to create the stack. Look for
