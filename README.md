@@ -42,6 +42,16 @@ it with `--do-it`. You can also supply `--prefix`.
 
 # CLI Tutorial
 
+```
+SSMBAK_STACKNAME=ssmbak
+ssmbak-stack $SSMBAK_STACKNAME$ create
+```
+```
+06/15/24 17:25:25   CREATE_IN_PROGRESS  ssmbak  AWS::CloudFormation::Stack  User Initiated
+...
+06/15/24 17:26:44   CREATE_COMPLETE  ssmbak  AWS::CloudFormation::Stack
+```
+
 Once the stack is up and new params are backed-up automatically, you can go through the following steps to give you a feel for how it works.
 
 Create some params with value `initial` in `testyssmbak/` and `testyssmbak/deeper` to show recursion:
@@ -225,7 +235,7 @@ And restore:
 +-----------------------+---------+--------+---------------------------+
 ```
 
-Voila. Just `/testyssmbak/deeper/2` is UPDATED.
+Voila. Just `/testyssmbak/deeper/2` is `UPDATED`.
 
 ```
 % aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@h=split; print "$h[4] \t\t $h[6]\n";'
@@ -253,10 +263,11 @@ DELETEDPARAMETERS       /testyssmbak/deeper/2
 DELETEDPARAMETERS       /testyssmbak/deeper/3
 ```
 
-And pretend we made a mistake. Oh no! We want them all back:
+And pretend we made a mistake. Oh no! We want them all back. Let's give ssmbak some time to process and see what we can restore.
 
 ```
-
+sleep 30
+ssmbak preview /testyssmbak/ $END_MARK --recursive
 ```
 ```
 ```
