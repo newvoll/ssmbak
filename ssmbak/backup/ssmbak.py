@@ -57,6 +57,9 @@ def backup(action: dict) -> int:
     logged and skipped. Tagging is used for metadata like description
     and time of event.
 
+    NOTE: for some reason only top-level key names arrive without a
+    prepending slash. IN that case, we prepend at the note PREPEND.
+
     Arguments:
       action: dict as returned by process_message.
 
@@ -77,6 +80,8 @@ def backup(action: dict) -> int:
         method = "delete_object"
     else:
         method = "put_object"
+        if not action["name"].startswith("/"):  # PREPEND
+            action["name"] = f"/{action['name']}"
         ssm_kwargs = {"Name": action["name"], "WithDecryption": True}
         try:
             response = ssm.get_parameter(**ssm_kwargs)
