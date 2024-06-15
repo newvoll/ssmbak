@@ -308,9 +308,6 @@ ssmbak preview /testyssmbak/ `date -u +"%Y-%m-%dT%H:%M:%S"`
 ```
 
 
-We can operate on that by omitting the slash.
-
-
 ### CLI Gotchas:
 * You need a bunch of shady permissions to create the stack. Look for
   such errors if it fails.
