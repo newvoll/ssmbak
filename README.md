@@ -104,10 +104,8 @@ aws ssm get-parameters-by-path --path /testyssmbak --recursive \
 Update #2 for path and subpath:
 
 ```
-aws ssm put-parameter --name /testyssmbak/2 --value UPDATED \
-  --type String --overwrite
-aws ssm put-parameter --name /testyssmbak/deeper/2 --value UPDATED \
-  --type String --overwrite
+aws ssm put-parameter --name /testyssmbak/2 --value UPDATED --type String --overwrite
+aws ssm put-parameter --name /testyssmbak/deeper/2 --value UPDATED --type String --overwrite
 ```
 
 ```
