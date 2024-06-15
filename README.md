@@ -206,7 +206,7 @@ ssmbak preview /testyssmbak/deeper/2 $UPDATED_MARK --recursive
 And restore:
 
 ```
-% ssmbak restore /testyssmbak/deeper/2 $UPDATED_MARK
+ssmbak restore /testyssmbak/deeper/2 $UPDATED_MARK
 ```
 ```
 +-----------------------+---------+--------+---------------------------+
@@ -219,7 +219,7 @@ And restore:
 Voila. Just `/testyssmbak/deeper/2` is `UPDATED`.
 
 ```
-% aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@h=split; print "$h[4] \t\t $h[6]\n";'
+aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@h=split; print "$h[4] \t\t $h[6]\n";'
 ```
 ```
 /testyssmbak/1 		 initial
