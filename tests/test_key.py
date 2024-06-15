@@ -28,6 +28,23 @@ def test_key_not_path():
     assert [x["Name"] for x in previews] == [name]
 
 
+def test_key_not_path_root():
+    """Makes sure a key doesn't return all keys that start with it"""
+    name = f"{pytest.test_path}"
+    initial_params = helpers.create_and_check([name])
+    # helpers.update_and_check([name])
+    in_between = helpers.str2datetime("2023-08-31T09:48:00")
+    key = Path(
+        name,
+        in_between,
+        pytest.region,
+        pytest.bucketname,
+    )
+    logger.warning(key)
+    previews = key.preview()
+    assert [x["Name"] for x in previews] == [name]
+
+
 def test_key():
     """Tests just one key instead of a path.
 

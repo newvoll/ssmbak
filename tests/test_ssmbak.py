@@ -64,6 +64,30 @@ def test_process_message():
 
 
 @pytest.mark.parametrize("backup_source", [local_lambda, ssmbak])
+def test_backup_create_root_pathkey(backup_source):
+    if backup_source == local_lambda and not pytest.check_local():
+        pytest.skip()
+    testo = slurp_helper("create")
+    action = ssmbak.process_message(update_name(testo, pytest.test_path))
+    backup_action = getattr(backup_source, "process_message")(
+        update_name(testo, pytest.test_path)
+    )
+    new_stuff = helpers.prep(action)
+    getattr(backup_source, "backup")(backup_action)
+    version = pytest.s3.get_object(Bucket=pytest.bucketname, Key=action["name"])
+    logger.debug("version: %s", version)
+    assert version["ResponseMetadata"]["HTTPStatusCode"] == 200
+    tagset = get_tagset(action["name"])
+    assert tagset["ssmbakType"] == action["type"]
+    stuff = version["Body"].read().decode("utf-8").strip()
+    assert stuff == new_stuff["Value"]
+    # not the best test, but cya
+    taggy = tagtime(action["name"], version)
+    logger.debug(taggy)
+    assert taggy == datetime(2022, 8, 3, 21, 9, 31, tzinfo=timezone.utc)
+
+
+@pytest.mark.parametrize("backup_source", [local_lambda, ssmbak])
 @pytest.mark.parametrize("totest", ["create", "create_desc"])
 def test_backup_create(backup_source, totest):
     """Test the backing up of an SSM Param Create event
