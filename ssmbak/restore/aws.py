@@ -290,10 +290,12 @@ class Resource:
                 to_extend.extend(param_page["Versions"])
             except KeyError:
                 logger.debug("no versions")
-            if not recurse:
-                to_extend = [
-                    x for x in to_extend if x["Key"].count("/") <= key.count("/") + 1
-                ]
+            if not recurse or not key.endswith("/"):
+                if key in [x["Key"] for x in to_extend + versions]:
+                    to_extend = [x for x in to_extend if x["Key"] == key]
+                else:
+                    n = key.count("/")
+                    to_extend = [x for x in to_extend if x["Key"].count("/") == n]
             for version in to_extend:
                 if version["Key"] not in [x["Key"] for x in versions]:
                     version["tagset"] = self._get_tagset(
