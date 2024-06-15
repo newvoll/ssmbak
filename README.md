@@ -115,9 +115,11 @@ Standard        2
 ```
 
 
-Let's mark the time for later and see that now #2 for each is set to `UPDATED`:
+Let's sleep a bit before marking the time for later and see that now
+#2 for each is set to `UPDATED`:
 
 ```
+sleep 30
 UPDATED_MARK=`date -u +"%Y-%m-%dT%H:%M:%S"`
 aws ssm get-parameters-by-path --path /testyssmbak --recursive \
   | perl -ne '@h=split; print "$h[4] \t\t $h[6]\n";'
