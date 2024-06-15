@@ -78,7 +78,7 @@ sleep 30 && IN_BETWEEN=`date -u +"%Y-%m-%dT%H:%M:%S"` && sleep 30
 They're all set to `inital`.
 
 ```
-aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@hee=split; print "$hee[4] \t\t $hee[6]\n";'
+aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@h=split; print "$h[4] \t\t $h[6]\n";'
 ```
 
 ```
@@ -126,7 +126,7 @@ Standard        2
 Now #2 for each is set to `UPDATED`:
 
 ```
-aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@hee=split; print "$hee[4] \t\t $hee[6]\n";'
+aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@h=split; print "$h[4] \t\t $h[6]\n";'
 ```
 
 ```
@@ -186,7 +186,7 @@ ssmbak restore /testyssmbak/ $IN_BETWEEN --recursive
 And now they're all back to `initial`:
 
 ```
-aws ssm get-parameters-by-path --path /testyssmbak/ --recursive | perl -ne '@hee=split; print "$hee[4] \t\t $hee[6]\n";'
+aws ssm get-parameters-by-path --path /testyssmbak --recursive | perl -ne '@h=split; print "$h[4] \t\t $h[6]\n";'
 ```
 
 ```
