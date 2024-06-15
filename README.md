@@ -46,6 +46,7 @@ it with `--do-it`. You can also supply `--prefix`.
 SSMBAK_STACKNAME=ssmbak
 ssmbak-stack $SSMBAK_STACKNAME create
 ```
+
 ```
 06/15/24 17:25:25   CREATE_IN_PROGRESS  ssmbak  AWS::CloudFormation::Stack  User Initiated
 ...
@@ -90,8 +91,8 @@ They're all set to `inital`.
 aws ssm get-parameters-by-path --path /testyssmbak --recursive \
   | perl -ne '@h=split; print "$h[4] \t\t $h[6]\n";'
 ```
+
 ```
-/testyssmbak 		 initial
 /testyssmbak/1 		 initial
 /testyssmbak/2 		 initial
 /testyssmbak/3 		 initial
@@ -140,11 +141,6 @@ aws ssm get-parameters-by-path --path /testyssmbak --recursive \
 When we preview the IN_BETWEEN point-in-time, we see that everything
 was `initial` at that time.
 
-> [!NOTE]
-> Paths end with a slash. You can set `/some/path=value` and also have
-> `/some/path/key=somethingelse`. That's why key `/testyssmbak` won't
-> show up in the preview below.
-
 ```
 ssmbak preview /testyssmbak/ $IN_BETWEEN --recursive
 ```
@@ -153,15 +149,14 @@ ssmbak preview /testyssmbak/ $IN_BETWEEN --recursive
 +-----------------------+---------+--------+---------------------------+
 | Name                  | Value   | Type   | Modified                  |
 +-----------------------+---------+--------+---------------------------+
-| /testyssmbak/2        | initial | String | 2024-06-13 20:10:54+00:00 |
-| /testyssmbak/3        | initial | String | 2024-06-13 20:10:56+00:00 |
-| /testyssmbak/deeper/3 | initial | String | 2024-06-13 20:10:56+00:00 |
-| /testyssmbak/1        | initial | String | 2024-06-13 20:10:53+00:00 |
-| /testyssmbak/deeper/1 | initial | String | 2024-06-13 20:10:54+00:00 |
-| /testyssmbak/deeper/2 | initial | String | 2024-06-13 20:10:55+00:00 |
+| /testyssmbak/1        | initial | String | 2024-06-15 17:48:58+00:00 |
+| /testyssmbak/2        | initial | String | 2024-06-15 17:49:00+00:00 |
+| /testyssmbak/3        | initial | String | 2024-06-15 17:49:01+00:00 |
+| /testyssmbak/deeper/1 | initial | String | 2024-06-15 17:48:59+00:00 |
+| /testyssmbak/deeper/2 | initial | String | 2024-06-15 17:49:00+00:00 |
+| /testyssmbak/deeper/3 | initial | String | 2024-06-15 17:49:02+00:00 |
 +-----------------------+---------+--------+---------------------------+
 ```
-
 
 Do the restore:
 
@@ -173,12 +168,12 @@ ssmbak restore /testyssmbak/ $IN_BETWEEN --recursive
 +-----------------------+---------+--------+---------------------------+
 | Name                  | Value   | Type   | Modified                  |
 +-----------------------+---------+--------+---------------------------+
-| /testyssmbak/1        | initial | String | 2024-06-13 21:08:50+00:00 |
-| /testyssmbak/2        | initial | String | 2024-06-13 21:08:51+00:00 |
-| /testyssmbak/3        | initial | String | 2024-06-13 21:08:52+00:00 |
-| /testyssmbak/deeper/1 | initial | String | 2024-06-13 21:08:50+00:00 |
-| /testyssmbak/deeper/2 | initial | String | 2024-06-13 21:08:52+00:00 |
-| /testyssmbak/deeper/3 | initial | String | 2024-06-13 21:08:53+00:00 |
+| /testyssmbak/1        | initial | String | 2024-06-15 17:48:58+00:00 |
+| /testyssmbak/2        | initial | String | 2024-06-15 17:49:00+00:00 |
+| /testyssmbak/3        | initial | String | 2024-06-15 17:49:01+00:00 |
+| /testyssmbak/deeper/1 | initial | String | 2024-06-15 17:48:59+00:00 |
+| /testyssmbak/deeper/2 | initial | String | 2024-06-15 17:49:00+00:00 |
+| /testyssmbak/deeper/3 | initial | String | 2024-06-15 17:49:02+00:00 |
 +-----------------------+---------+--------+---------------------------+
 ```
 
@@ -198,6 +193,7 @@ aws ssm get-parameters-by-path --path /testyssmbak --recursive \
 /testyssmbak/deeper/2 		 initial
 /testyssmbak/deeper/3 		 initial
 ```
+
 
 Let's say we made a mistake and want to revert one of the UPDATED keys:
 
@@ -280,10 +276,41 @@ ssmbak preview /testyssmbak/ $END_MARK --recursive
 
 We won't do the restore after all and stay cleaned-up.
 
+> [!NOTE]
+> Paths end with a slash, which is why key `/testyssmbak` doesn't show
+> up in the previews.
+
+In all this we haven't seen or touched the key `/testyssmbak`, which
+differs from path `/testyssmbak/`.
+
+```
+ssmbak preview /testyssmbak `date -u +"%Y-%m-%dT%H:%M:%S"`
+```
+
+```
+WTF?!
+```
+
+
+We can operate on that by omitting the slash.
+
+
+### CLI Gotchas:
+* You need a bunch of shady permissions to create the stack. Look for
+  such errors if it fails.
+* `aws` commands require that the awscli is installed and configured.
+
+
+# Scripts
+* `ssmbak-all` will back up all SSM params to the bucket. You can also give it a path.
+
+* `ssmbak-stack` can create and give you info about the stack, including all its resources.
+
+`-h` for more info.
+
 You can now seed backups for all previously set SSM Params with
 `ssmbak-all`. It will just show you what would be backed-up. `--do-it`
 to actually perform the backups.
-
 
 The lambda is configured to write logs to cloudwatch.
 
@@ -301,21 +328,6 @@ aws logs tail --format short /aws/lambda/$SSMBAK_LAMBDANAME
 2024-06-13T20:11:11 REPORT RequestId: d404f4c7-1c53-5e41-a7db-aa2248dee8cd	Duration: 3430.49 ms	Billed Duration: 3431 ms	Memory Size: 128 MB	Max Memory Used: 84 MB	Init Duration: 282.28 ms
 ...
 ```
-
-
-### CLI Gotchas:
-* You need a bunch of shady permissions to create the stack. Look for
-  such errors if it fails.
-* `aws` commands require that the awscli is installed and configured.
-
-
-# Scripts
-`ssmbak-all` will back up all SSM params to the bucket. You can also give it a path.
-
-`ssmbak-stack` can create and give you info about the stack, including all its resources.
-
-`-h` for more info.
-
 
 # Lib Tutorial
 
