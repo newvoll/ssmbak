@@ -65,12 +65,13 @@ def test_process_message():
 
 @pytest.mark.parametrize("backup_source", [local_lambda, ssmbak])
 def test_backup_create_root_pathkey(backup_source):
+    noslash = pytest.test_path.lstrip("/").rstrip("/")
     if backup_source == local_lambda and not pytest.check_local():
         pytest.skip()
     testo = slurp_helper("create")
-    action = ssmbak.process_message(update_name(testo, pytest.test_path))
+    action = ssmbak.process_message(update_name(testo, noslash))
     backup_action = getattr(backup_source, "process_message")(
-        update_name(testo, pytest.test_path)
+        update_name(testo, noslash)
     )
     new_stuff = helpers.prep(action)
     getattr(backup_source, "backup")(backup_action)

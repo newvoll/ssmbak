@@ -19,6 +19,9 @@ logger.setLevel(getattr(logging, LEVEL))
 def process_message(body: str) -> dict[str, Union[str, datetime]]:
     """Transforms a message from EventBridge (via SQS) to friendly format.
 
+    NOTE: for some reason only top-level key names arrive without a
+    prepending slash. In that case, we prepend at the note PREPEND.
+
     Arguments:
       body: json-formatted string from the event
 
@@ -47,6 +50,9 @@ def process_message(body: str) -> dict[str, Union[str, datetime]]:
     }
     if "description" in message["detail"]:
         action["description"] = message["detail"]["description"]
+    if not action["name"].startswith("/"):  # PREPEND
+        logger.debug(f"prepending {action['name']} with a /")
+        action["name"] = f"/{action['name']}"
     return action
 
 
@@ -56,9 +62,6 @@ def backup(action: dict) -> int:
     If an SSM param was deleted before it could get processed, it is
     logged and skipped. Tagging is used for metadata like description
     and time of event.
-
-    NOTE: for some reason only top-level key names arrive without a
-    prepending slash. IN that case, we prepend at the note PREPEND.
 
     Arguments:
       action: dict as returned by process_message.
@@ -73,9 +76,6 @@ def backup(action: dict) -> int:
         logger.critical("SSMBAK_BUCKET env var must be set! Dying...")
         sys.exit(1)
     logger.debug("action: %s", action)
-    if not action["name"].startswith("/"):  # PREPEND
-        logger.debug(f"prepending {action['name']} with a /")
-        action["name"] = f"/{action['name']}"
     s3 = boto3.client("s3", endpoint_url=os.getenv("AWS_ENDPOINT"))
     ssm = boto3.client("ssm", endpoint_url=os.getenv("AWS_ENDPOINT"))
     kwargs = {"Bucket": bucketname, "Key": action["name"]}
