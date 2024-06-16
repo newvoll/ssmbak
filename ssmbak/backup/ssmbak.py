@@ -19,6 +19,9 @@ logger.setLevel(getattr(logging, LEVEL))
 def process_message(body: str) -> dict[str, Union[str, datetime]]:
     """Transforms a message from EventBridge (via SQS) to friendly format.
 
+    NOTE: for some reason only top-level key names arrive without a
+    prepending slash. In that case, we prepend at the note PREPEND.
+
     Arguments:
       body: json-formatted string from the event
 
@@ -47,6 +50,9 @@ def process_message(body: str) -> dict[str, Union[str, datetime]]:
     }
     if "description" in message["detail"]:
         action["description"] = message["detail"]["description"]
+    if not action["name"].startswith("/"):  # PREPEND
+        logger.debug("prepending %s with a /", action["name"])
+        action["name"] = f"/{action['name']}"
     return action
 
 

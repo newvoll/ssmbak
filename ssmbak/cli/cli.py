@@ -6,9 +6,11 @@ state at a point in time (checktime).
 
 import argparse
 import logging
+import os
 import pprint
 import sys
 from datetime import datetime, timezone
+from importlib.metadata import metadata, version
 from textwrap import wrap
 
 from botocore.exceptions import ClientError, NoRegionError
@@ -20,7 +22,9 @@ from ssmbak.restore.actions import Path
 logger = logging.getLogger(__name__)
 pp = pprint.PrettyPrinter(indent=4)
 parser = argparse.ArgumentParser(
-    description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    description=__doc__,
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    prog=os.path.basename(__file__),
 )
 parser.add_argument("command", help="one of preview or restore")
 parser.add_argument(
@@ -56,6 +60,12 @@ parser.add_argument(
     action="store_true",
     default=False,
     help="increase logging verbosity",
+)
+parser.add_argument(
+    "--version",
+    action="version",
+    version=f"{metadata('ssmbak')['Name']} {version('ssmbak')}",
+    help="print the version and quit",
 )
 args = parser.parse_args()
 checktime = datetime.strptime(args.checktime, "%Y-%m-%dT%H:%M:%S").replace(

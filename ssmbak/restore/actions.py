@@ -66,7 +66,7 @@ class Path(Resource):
           bucketname: The same bucket that the lambda writes to.
           recurse: operate on all paths/keys under name/
         """
-        self.name = name.rstrip("/")
+        self.name = name  # .rstrip("/")
         self.checktime = checktime
         self.recurse = recurse
         self.versions = {}
@@ -91,6 +91,8 @@ class Path(Resource):
         """
         versions = self.get_versions()
         names = list(set(versions))
+        if self.name in names and not self.recurse:  # if it's a key and not a path
+            return [self.name]
         return names
 
     def get_versions(self) -> dict[str, Version]:
