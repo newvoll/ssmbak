@@ -31,7 +31,7 @@ pip install ssmbak
 ssmbak-stack <SSMBAK_STACKNAME> create
 ```
 
-That's it! All new params will automatically be backed-up and
+That's it. All new params will automatically be backed-up and
 available for `ssmbak` point-in-time restore via CLI or lib, like:
 
 `ssmbak preview /my/ssm/path/ 2024-06-15T17:56:58`
