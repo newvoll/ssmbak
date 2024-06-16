@@ -352,16 +352,11 @@ ssmbak-bucket-dkvp9oegrx2y
 Session:
 ```
 >>> from ssmbak.restore.actions import Path
-
 >>> from datetime import datetime, timezone
-
 >>> in_between = datetime.strptime("2024-06-13T01:55:26", "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
-
 >>> path = Path("/testoossmbak", in_between, "us-west-2", "ssmbak-bucket-dkvp9oegrx2y", recurse=True)
-
 >>> path.preview()
 [{'Name': '/testoossmbak/deep/yay', 'Deleted': True, 'Modified': datetime.datetime(2024, 6, 13, 1, 50, 22, tzinfo=tzutc())}]
-
 >>> path.restore()
 ```
 
