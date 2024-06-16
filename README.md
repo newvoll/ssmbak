@@ -319,9 +319,9 @@ ssmbak preview /testyssmbak/ `date -u +"%Y-%m-%dT%H:%M:%S"`
 
 `-h` for more info.
 
-You can now seed backups for all previously set SSM Params with
-`ssmbak-all`. It will just show you what would be backed-up. `--do-it`
-to actually perform the backups.
+Seed backups for all previously set SSM Params with `ssmbak-all`. It
+will just show you what would be backed-up. `--do-it` to actually
+perform the backups.
 
 The lambda is configured to write logs to cloudwatch.
 
