@@ -53,6 +53,11 @@ ssmbak-stack $SSMBAK_STACKNAME create
 Once the stack is up and new params are backed-up automatically, you can go through the following steps to give you a feel for how it works.
 
 Create some params with value `initial` in `/testyssmbak/` and `/testyssmbak/deeper` to show recursion. We'll also set key `/testyssmbak` to show the difference between keys and paths.
+
+> [!NOTE]
+> Paths end with a slash, which is why key `/testyssmbak` doesn't show
+> up in the previews.
+
 ```
 aws ssm put-parameter --name /testyssmbak --value initial --type String --overwrite
 for i in $(seq 3)
@@ -269,10 +274,6 @@ ssmbak preview /testyssmbak/ $END_MARK --recursive
 ```
 
 We won't do the restore after all and stay cleaned-up.
-
-> [!NOTE]
-> Paths end with a slash, which is why key `/testyssmbak` doesn't show
-> up in the previews.
 
 In all this we haven't seen or touched the key `/testyssmbak`, which
 differs from path `/testyssmbak/`.
