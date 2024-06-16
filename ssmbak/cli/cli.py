@@ -57,6 +57,12 @@ parser.add_argument(
     default=False,
     help="increase logging verbosity",
 )
+parser.add_argument(
+    "--version",
+    action="store_true",
+    default=False,
+    help="print the version",
+)
 args = parser.parse_args()
 checktime = datetime.strptime(args.checktime, "%Y-%m-%dT%H:%M:%S").replace(
     tzinfo=timezone.utc
