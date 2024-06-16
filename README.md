@@ -115,7 +115,7 @@ Standard        2
 ```
 
 
-Let's sleep a bit before marking the time for later and see that now
+Let's sleep a bit before marking the time. Then we see that
 #2 for each is set to `UPDATED`:
 
 ```
