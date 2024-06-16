@@ -54,10 +54,6 @@ Once the stack is up and new params are backed-up automatically, you can go thro
 
 Create some params with value `initial` in `/testyssmbak/` and `/testyssmbak/deeper` to show recursion. We'll also set key `/testyssmbak` to show the difference between keys and paths.
 
-> [!NOTE]
-> Paths end with a slash, which is why key `/testyssmbak` doesn't show
-> up in the previews.
-
 ```
 aws ssm put-parameter --name /testyssmbak --value initial --type String --overwrite
 for i in $(seq 3)
@@ -139,6 +135,10 @@ aws ssm get-parameters-by-path --path /testyssmbak --recursive \
 
 When we preview the IN_BETWEEN point-in-time, we see that everything
 was `initial` at that time.
+
+> [!NOTE]
+> Paths end with a slash, which is why key `/testyssmbak` doesn't show
+> up in the previews.
 
 ```
 ssmbak preview /testyssmbak/ $IN_BETWEEN --recursive
