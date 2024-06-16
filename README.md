@@ -372,7 +372,8 @@ Session:
 * Support for advanced ssm params has not been tested at all.
 
 # Development
-This is a poetry project, so it should be butter once you get that sorted.
+This is a poetry project, so it should be butter once you get that
+sorted. Install [pre-commit](https://pre-commit.com/) for black on commit, lint and typing on push.
 
 # Testing
 Testing uses localstack, as you can see in the Github
