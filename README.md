@@ -315,15 +315,18 @@ ssmbak preview /testyssmbak/ `date -u +"%Y-%m-%dT%H:%M:%S"`
 # Scripts
 * `ssmbak-all` will back up all SSM params to the bucket. You can also give it a path.
 
-* `ssmbak-stack` can create and give you info about the stack, including all its resources.
+* `ssmbak-stack` can create, update and give you info about the stack,
+  including all its resources.
 
-`-h` for more info.
+* `-h` for more info.
 
 Seed backups for all previously set SSM Params with `ssmbak-all`. It
 will just show you what would be backed-up. `--do-it` to actually
 perform the backups.
 
-If you download a new version, best to get that same version running in the Lambda with `ssmbak-stack <SSMBAK_STACKNAME> update`.
+If you download a new version, best to get that same version running in the Lambda with
+
+```ssmbak-stack <SSMBAK_STACKNAME> update```
 
 The lambda is configured to write logs to cloudwatch.
 
