@@ -372,12 +372,14 @@ Session:
 * Support for advanced ssm params has not been tested at all.
 
 # Development
-This is a poetry project, so it should be butter once you get that
-sorted. Install [pre-commit](https://pre-commit.com/) for black on commit, lint and typing on push.
+This is a [poetry](https://python-poetry.org/) project, so it should
+be butter once you get that sorted. Install
+[pre-commit](https://pre-commit.com/) for black on commit, lint and
+typing on push.
 
 # Testing
-Testing uses localstack, as you can see in the Github
-actions. `docker-compose up` should do the trick, then `./tests/test_localstack.sh`.
+Testing uses localstack, as you can see in the [Github
+actions](https://github.com/newvoll/ssmbak/actions). `docker-compose up` should do the trick, then `./tests/test_localstack.sh`.
 
 * `source tests/localstack_env.sh` to point ssmbak to localstack.
 
