@@ -1,5 +1,5 @@
 The AWS SSM Parameter Store is simple and great for AWS config bits,
-but SSM only preserves 100 versions, and maintains no record of
+but SSM only preserves 100 versions and maintains no record of
 deletion.
 
 To enable point-in-time restore, including deleted versions and entire
@@ -21,8 +21,6 @@ from ssmbak.restore.actions import Path
 Path.restore()
 ```
 
-Code blocks are separated from their output by another block in this README for ease of copy/paste.
-
 # Quickstart
 You'll need the awscli and credentials that can create IAM resources
 with Cloudformation (to assign minimal permissions to the lambda
@@ -34,11 +32,10 @@ ssmbak-stack <SSMBAK_STACKNAME> create
 ```
 
 That's it! All new params will automatically be backed-up and
-available for `ssmbak` point-in-time restore via CLI or lib.
+available for `ssmbak` point-in-time restore via CLI or lib, like:
 
-If you'd like previously set SSM params backups seeded, just run
-`ssmbak-all`. It'll print out what would be backed-up until you supply
-it with `--do-it`. You can also supply `--prefix`.
+`ssmbak preview /my/ssm/path/ 2024-06-15T17:56:58`
+
 
 # CLI Tutorial
 
