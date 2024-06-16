@@ -324,7 +324,7 @@ Seed backups for all previously set SSM Params with `ssmbak-all`. It
 will just show you what would be backed-up. `--do-it` to actually
 perform the backups.
 
-If you download a new version, best to get that same version running in the Lambda with
+If you download a new version, best to get that same version running in the Lambda with:
 
 ```ssmbak-stack <SSMBAK_STACKNAME> update```
 
