@@ -365,12 +365,6 @@ Session:
 >>> path.restore()
 ```
 
-# Additional notes
-* `ssmbak-stack` creates two alarms for the process queue, in case
-  you'd like to configure some actions.
-* Use a custom kms key for added security, which will require you to set up the infra.
-* Support for advanced ssm params has not been tested at all.
-
 # Development
 This is a [poetry](https://python-poetry.org/) project, so it should
 be butter once you get that sorted. Install
@@ -394,3 +388,10 @@ hot-reloading of the lambda.
 * When testing on aws instead of localstack, don't use same bucket as running lambda!
   * The lambda will be processing and backing up in addition to the tests.
   * Tests will set versioning on the bucket and manipulate/destroy pytest.test_path.
+
+
+# Addenda
+* `ssmbak-stack` creates two alarms for the process queue, in case
+  you'd like to configure some actions.
+* Use a custom kms key for added security, which will require you to set up the infra.
+* Support for advanced ssm params has not been tested at all.
