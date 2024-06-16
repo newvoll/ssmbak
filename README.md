@@ -7,7 +7,7 @@ recursive trees, we use an s3 bucket with versioning enabled as a
 backend.
 
 This project includes all the pieces to both backup and restore SSM
-Params.
+Params to a point in time.
 
 * Backup: Eventbridge -> SQS -> Lambda -> S3
   * launch cloudformation stack from
