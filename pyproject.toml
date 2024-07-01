@@ -3,7 +3,7 @@ name = "ssmbak"
 license = "MIT"
 repository = "https://github.com/newvoll/ssmbak"
 homepage = "https://github.com/newvoll/ssmbak"
-version = "0.0.9"
+version = "0.1.0"
 description = "Event-driven SSM Param backups and point-in-time restore."
 authors = ["olmouse <olmouse@newvoll.net>"]
 readme = "README.md"
@@ -50,6 +50,6 @@ ignore-paths = '^docs/'
 
 [tool.poetry.urls]
 Homepage = "https://github.com/newvoll/ssmbak"
-Documentation = "https://readthedocs.org/projects/ssmbak/"
+Documentation = "https://ssmbak.readthedocs.io/en/latest/index.html"
 Repository = "https://github.com/newvoll/ssmbak"
 Issues = "https://github.com/newvoll/ssmbak/issues"
