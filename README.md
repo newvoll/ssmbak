@@ -22,7 +22,7 @@ Path.restore()
 ```
 
 # Quickstart
-You'll need the awscli and credentials that can create IAM resources
+You'll need and credentials that can create IAM resources
 with Cloudformation (to assign minimal permissions to the lambda
 role).
 
@@ -38,6 +38,9 @@ available for `ssmbak` point-in-time restore via CLI or lib, like:
 
 
 # CLI Tutorial
+
+You'll need the [awcli](https://aws.amazon.com/cli/) unless you want
+to point and click in the AWS management console to follow along..
 
 ```
 SSMBAK_STACKNAME=ssmbak
