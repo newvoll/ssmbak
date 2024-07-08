@@ -1,5 +1,6 @@
 import os
 import sys
+from importlib.metadata import metadata, version
 
 sys.path.insert(0, os.path.abspath("../ssmbak/"))
 
@@ -14,7 +15,7 @@ sys.path.insert(0, os.path.abspath("../ssmbak/"))
 project = "ssmbak"
 copyright = "2024, olmouse"
 author = "olmouse"
-release = "0.0.6"
+release = version("ssmbak")
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
