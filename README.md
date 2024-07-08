@@ -22,9 +22,8 @@ Path.restore()
 ```
 
 # Quickstart
-You'll need and credentials that can create IAM resources
-with Cloudformation (to assign minimal permissions to the lambda
-role).
+You'll need credentials that can create IAM resources with
+Cloudformation (to assign minimal permissions to the lambda role).
 
 ```
 pip install ssmbak
