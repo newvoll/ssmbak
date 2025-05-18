@@ -14,7 +14,7 @@ from ssmbak.backup import ssmbak
 from tests import helpers, local_lambda
 
 logger = logging.getLogger(__name__)
-name = f"{pytest.test_path}/{helpers.rando()}"
+NAME = f"{pytest.test_path}/{helpers.rando()}"
 
 
 def slurp_helper(filename):
@@ -54,8 +54,8 @@ def get_tagset(key):
 def test_process_message():
     """Unit test process_message used by everything."""
     testo = slurp_helper("create")
-    data = ssmbak.process_message(update_name(testo, name))
-    assert data["name"] == name
+    data = ssmbak.process_message(update_name(testo, NAME))
+    assert data["name"] == NAME
     assert data["type"] == "String"
     assert data["operation"] == "Create"
     assert isinstance(data["time"], datetime)
@@ -102,8 +102,8 @@ def test_backup_create(backup_source, totest):
     if backup_source == local_lambda and not pytest.check_local():
         pytest.skip()
     testo = slurp_helper(totest)
-    action = ssmbak.process_message(update_name(testo, name))
-    backup_action = getattr(backup_source, "process_message")(update_name(testo, name))
+    action = ssmbak.process_message(update_name(testo, NAME))
+    backup_action = getattr(backup_source, "process_message")(update_name(testo, NAME))
     new_stuff = helpers.prep(action)
     getattr(backup_source, "backup")(backup_action)
     version = pytest.s3.get_object(Bucket=pytest.bucketname, Key=action["name"])
@@ -149,8 +149,8 @@ def test_backup_update(backup_source, totest):
     if backup_source == local_lambda and not pytest.check_local():
         pytest.skip()
     testo = slurp_helper(totest)
-    action = ssmbak.process_message(update_name(testo, name))
-    backup_action = getattr(backup_source, "process_message")(update_name(testo, name))
+    action = ssmbak.process_message(update_name(testo, NAME))
+    backup_action = getattr(backup_source, "process_message")(update_name(testo, NAME))
     new_stuff = helpers.prep(action)
     getattr(backup_source, "backup")(helpers.update_time(backup_action))
     now = datetime.now(tz=timezone.utc)
@@ -177,8 +177,8 @@ def test_backup_delete(backup_source):
     if backup_source == local_lambda and not pytest.check_local():
         pytest.skip()
     testo = slurp_helper("delete")
-    backup_action = getattr(backup_source, "process_message")(update_name(testo, name))
-    action = ssmbak.process_message(update_name(testo, name))
+    backup_action = getattr(backup_source, "process_message")(update_name(testo, NAME))
+    action = ssmbak.process_message(update_name(testo, NAME))
     helpers.prep(action)
     getattr(backup_source, "backup")(backup_action)
     ssmbak.backup(action)
@@ -197,8 +197,8 @@ def test_backup_create_noparam(backup_source):
     if backup_source == local_lambda and not pytest.check_local():
         pytest.skip()
     testo = slurp_helper("create")
-    action = ssmbak.process_message(update_name(testo, name))
-    backup_action = getattr(backup_source, "process_message")(update_name(testo, name))
+    action = ssmbak.process_message(update_name(testo, NAME))
+    backup_action = getattr(backup_source, "process_message")(update_name(testo, NAME))
     logger.debug("action: %s", action)
     helpers.prep(action)
     pytest.ssm.delete_parameter(Name=action["name"])
