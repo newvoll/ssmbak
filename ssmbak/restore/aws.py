@@ -12,8 +12,13 @@ from typing import ClassVar, Union
 import boto3
 import botocore
 from botocore.exceptions import ClientError
+from mypy_boto3_s3 import S3Client
+from mypy_boto3_s3.service_resource import S3ServiceResource
+from mypy_boto3_s3.type_defs import GetObjectOutputTypeDef
+from mypy_boto3_ssm import SSMClient
+from mypy_boto3_ssm.type_defs import PutParameterRequestTypeDef
 
-from ssmbak.typing import Version
+from ssmbak.typing import Preview, Version
 
 logger = logging.getLogger(__name__)
 
@@ -48,37 +53,25 @@ class Resource:
         return cls._CALLS
 
     @cached_property
-    def s3(self) -> boto3.client:
+    def s3(self) -> S3Client:
         """boto3 s3 client. There should only be one."""
         return boto3.client(
             "s3", endpoint_url=os.getenv("AWS_ENDPOINT"), region_name=self.region
         )
 
     @cached_property
-    def s3res(self) -> boto3.client:
+    def s3res(self) -> S3ServiceResource:
         """boto3 s3 resource for backup contents. There should only be one."""
         return boto3.resource(
             "s3", endpoint_url=os.getenv("AWS_ENDPOINT"), region_name=self.region
         )
 
     @cached_property
-    def ssm(self) -> boto3.client:
+    def ssm(self) -> SSMClient:
         """boto3 ssm client. There should only be one."""
         return boto3.client(
             "ssm", endpoint_url=os.getenv("AWS_ENDPOINT"), region_name=self.region
         )
-
-    def _key_versions(self, versions: list[dict]) -> dict[str, Version]:
-        """Turns a list of dicts into a dict of dicts keyed by s3/param key.
-
-        Arguments:
-          versions: un-keyed list of versions as returned by AWS
-        """
-        keyed_versions = {}
-        for name in {x["Key"] for x in versions}:
-            key_versions = [x for x in versions if x["Key"] == name]
-            keyed_versions[name] = key_versions[0]
-        return keyed_versions
 
     def _tagtime(self, version: dict) -> datetime:
         """Extracts datetime from the backup version.
@@ -129,7 +122,7 @@ class Resource:
                 raise e
         return nice_tagset
 
-    def _make_ssm_kwargs(self, param: dict) -> dict[str, Union[str, bool]]:
+    def _make_ssm_kwargs(self, param: Preview) -> PutParameterRequestTypeDef:
         """Preps the kwargs for boto3 client ssm.put_parameter().
 
         Arguments:
@@ -144,7 +137,7 @@ class Resource:
             "Description": "fancy description",
         }
         """
-        kwargs = {
+        kwargs: PutParameterRequestTypeDef = {
             "Name": param["Name"],
             "Value": param["Value"],
             "Type": param["Type"],
@@ -154,7 +147,7 @@ class Resource:
             kwargs["Description"] = param["Description"]
         return kwargs
 
-    def _restore_preview(self, param: dict) -> None:
+    def _restore_preview(self, param: Preview) -> None:
         """Sets the ssm param to the desired state.
 
         Arguments:
@@ -236,6 +229,79 @@ class Resource:
         Resource._CALLS["versions"] += 1
         return paginator.paginate(Bucket=self.bucketname, Prefix=key)
 
+    def _collect_all_candidate_versions(
+        self,
+        key: str,
+        recurse: bool,
+        paginated: botocore.paginate.PageIterator,
+    ) -> list[Version]:
+        """Collects all candidate versions from paginated S3 response.
+
+        Extracts both DeleteMarkers and regular Versions, applies key filtering
+        based on recurse flag, but does NOT deduplicate or filter by time.
+        This allows subsequent per-key timeline analysis.
+
+        Arguments:
+          key: a single s3 key or path
+          recurse: operate on all paths/keys under key/
+          paginated: paginated response from _get_object_versions()
+
+        Returns:
+          Flat list of all candidate versions (with "Deleted" flag added to DeleteMarkers)
+        """
+        all_versions = []
+
+        for param_page in paginated:
+            page_versions = []
+
+            # Extract both DeleteMarkers and Versions, then merge by LastModified
+            delete_markers = []
+            if "DeleteMarkers" in param_page:
+                for deleted_version in param_page["DeleteMarkers"]:
+                    deleted_version["Deleted"] = True
+                    delete_markers.append(deleted_version)
+            else:
+                logger.debug("no delete markers")
+
+            versions = []
+            if "Versions" in param_page:
+                versions = param_page["Versions"]
+            else:
+                logger.debug("no versions")
+
+            # Merge DeleteMarkers and Versions, preserving S3's LastModified ordering
+            # Both arrays are already sorted by LastModified (most recent first)
+            # Merge them while maintaining that order
+            i, j = 0, 0
+            while i < len(delete_markers) and j < len(versions):
+                if delete_markers[i]["LastModified"] >= versions[j]["LastModified"]:
+                    page_versions.append(delete_markers[i])
+                    i += 1
+                else:
+                    page_versions.append(versions[j])
+                    j += 1
+            # Append remaining
+            page_versions.extend(delete_markers[i:])
+            page_versions.extend(versions[j:])
+
+            # Apply key filtering logic for non-recursive or specific key queries
+            if not recurse or not key.endswith("/"):
+                # Check if exact key exists in results so far
+                all_keys = [x["Key"] for x in page_versions + all_versions]
+                if key in all_keys:
+                    # Filter to only the exact key
+                    page_versions = [x for x in page_versions if x["Key"] == key]
+                else:
+                    # Filter to keys at same depth (same number of slashes)
+                    n = key.count("/")
+                    page_versions = [
+                        x for x in page_versions if x["Key"].count("/") == n
+                    ]
+
+            all_versions.extend(page_versions)
+
+        return all_versions
+
     def _get_versions(
         self, key: str, checktime: datetime, recurse: bool = False
     ) -> dict[str, Version]:
@@ -275,37 +341,35 @@ class Resource:
               },
           }
         """
-        versions = []
+        # Step 1: Get paginated versions from S3
         paginated = self._get_object_versions(key)
-        there_nows = self._ssmgetpath(key, recurse=recurse)
-        for param_page in paginated:
-            to_extend = []
-            try:
-                for deleted_version in param_page["DeleteMarkers"]:
-                    # only need to delete if it's there now
-                    if deleted_version["Key"] in there_nows:
-                        deleted_version["Deleted"] = True
-                        to_extend.append(deleted_version)
-            except KeyError:
-                logger.debug("no delete markers")
-            try:
-                to_extend.extend(param_page["Versions"])
-            except KeyError:
-                logger.debug("no versions")
-            if not recurse or not key.endswith("/"):
-                if key in [x["Key"] for x in to_extend + versions]:
-                    to_extend = [x for x in to_extend if x["Key"] == key]
-                else:
-                    n = key.count("/")
-                    to_extend = [x for x in to_extend if x["Key"].count("/") == n]
-            for version in to_extend:
-                if version["Key"] not in [x["Key"] for x in versions]:
-                    version["tagset"] = self._get_tagset(
-                        version["Key"], version["VersionId"]
-                    )
-                    if self._tagtime(version) <= checktime:
-                        versions.append(version)
-        return self._key_versions(versions)
+
+        # Step 2: Collect all candidate versions preserving order
+        # (DeleteMarkers before Versions, as in original code)
+        all_versions = self._collect_all_candidate_versions(key, recurse, paginated)
+
+        # Step 3: Select first qualifying version for each key
+        # S3 returns versions in reverse chronological order (most recent first)
+        # by LastModified, so the first version that passes time check is correct
+        result = {}
+        seen_keys: set[str] = set()
+
+        for version in all_versions:
+            param_key = version["Key"]
+            if param_key in seen_keys:
+                continue  # Already found most recent for this key
+
+            # Fetch tags and check time
+            version["tagset"] = self._get_tagset(param_key, version["VersionId"])
+            tagtime = self._tagtime(version)
+            # ssmbakTime is truncated to seconds (losing microseconds) when stored
+            # So compare at second-level precision to be fair
+            # Use < to mean "event happened in an earlier second"
+            if tagtime.replace(microsecond=0) < checktime.replace(microsecond=0):
+                result[param_key] = version
+                seen_keys.add(param_key)
+
+        return result
 
     def _get_version_body(self, name: str, versionid: str) -> str:
         """Uses s3 object resource to get the contents of the version.
@@ -333,7 +397,7 @@ class Resource:
                 raise e
         return body
 
-    def _get_contents(self, version: dict) -> str:
+    def _get_contents(self, version: GetObjectOutputTypeDef) -> str:
         """Reads and decodes the s3 object's body."""
         stuff = ""
         try:

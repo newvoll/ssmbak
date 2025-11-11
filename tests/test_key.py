@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from ssmbak.restore.actions import Path
+from ssmbak.restore.actions import ParamPath
 from tests import helpers
 
 logger = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ def test_key_not_path():
     initial_params = helpers.create_and_check([name, similar_name])
     helpers.update_and_check([name])
     in_between = helpers.str2datetime("2023-08-31T09:48:00")
-    key = Path(
+    key = ParamPath(
         name,
         in_between,
         pytest.region,
@@ -56,7 +56,7 @@ def test_key():
     initial_params = helpers.create_and_check([name])
     helpers.update_and_check([name])
     in_between = helpers.str2datetime("2023-08-31T09:48:00")
-    key = Path(
+    key = ParamPath(
         name,
         in_between,
         pytest.region,
@@ -76,7 +76,7 @@ def test_key():
     deltime, deleted_params = helpers.delete_params([name])
     logger.info("deleted_params %s", deleted_params)
     logger.info("%s deleted, deltime: %s", name, deltime)
-    key = Path(
+    key = ParamPath(
         name,
         deltime,
         pytest.region,
@@ -103,7 +103,7 @@ def test_tz_plus():
     initial_params = helpers.create_and_check([name])
     helpers.update_and_check([name])
     just_after = helpers.str2datetime("2022-08-03T21:10:00")
-    path = Path(name, just_after, pytest.region, pytest.bucketname)
+    path = ParamPath(name, just_after, pytest.region, pytest.bucketname)
     version = path.get_latest_version(name)
     logger.debug(helpers.pretty(version))
     preview = path.preview()[0]
@@ -117,9 +117,9 @@ def test_tz_plus():
         kwargs["Description"] = initial_params[name]["Description"]
     assert preview == kwargs
     in_between = helpers.str2datetime("2023-08-31T09:48:00")
-    path = Path(name, in_between, pytest.region, pytest.bucketname)
+    path = ParamPath(name, in_between, pytest.region, pytest.bucketname)
     logger.debug(helpers.pretty(preview))
     path.restore()
     too_early = helpers.str2datetime("1999-08-31T09:48:00")
-    path = Path(name, too_early, pytest.region, pytest.bucketname)
-    assert path.get_latest_version(name) == {}
+    path = ParamPath(name, too_early, pytest.region, pytest.bucketname)
+    assert path.get_latest_version(name) is None

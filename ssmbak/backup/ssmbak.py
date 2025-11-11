@@ -6,7 +6,7 @@ import os
 import sys
 import urllib.parse
 from datetime import datetime, timezone
-from typing import Union
+from typing import Union, cast
 
 import boto3
 from botocore.exceptions import ClientError
@@ -100,7 +100,20 @@ def backup(action: dict) -> int:
         kwargs["Tagging"] = urllib.parse.urlencode(tags)
         logger.debug("kwargs[Tagging]: %s", kwargs["Tagging"])
         kwargs["Body"] = value
-    logger.info("%s %s", method, str(kwargs))
+    # INFO: Log safe metadata only (never expose parameter values)
+    logger.info(
+        "%s %s (Type: %s, Size: %d bytes)",
+        method,
+        kwargs.get("Key", "unknown"),
+        action["type"],
+        len(str(kwargs.get("Body", ""))),
+    )
+    # DEBUG: Log full kwargs with Body redacted for debugging
+    if logger.isEnabledFor(logging.DEBUG):
+        redacted_kwargs = kwargs.copy()
+        if "Body" in redacted_kwargs:
+            redacted_kwargs["Body"] = "[REDACTED]"
+        logger.debug("%s kwargs: %s", method, redacted_kwargs)
     result = getattr(s3, method)(**kwargs)
     return result["ResponseMetadata"]["HTTPStatusCode"]
 
@@ -135,7 +148,7 @@ def process_event(event: dict[str, list[dict[str, Union[str, dict]]]]) -> int:
       Boolean which is kind of useless.
     """  # pylint: disable=line-too-long
     for record in event["Records"]:
-        param_action = process_message(record["body"])
+        param_action = process_message(cast(str, record["body"]))
         if param_action["operation"] in ["Create", "Update", "Delete"]:
             res = backup(param_action)
         else:

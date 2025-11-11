@@ -2,7 +2,7 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.6.0
+  rev: v6.0.0
   hooks:
     - id: trailing-whitespace
     - id: end-of-file-fixer
@@ -10,11 +10,11 @@ repos:
       args: ['--unsafe']
     - id: check-added-large-files
 - repo: https://github.com/psf/black
-  rev: 24.4.2
+  rev: 25.11.0
   hooks:
     - id: black
 - repo: https://github.com/pycqa/isort
-  rev: 5.13.2
+  rev: 7.0.0
   hooks:
     - id: isort
 - repo: local
@@ -26,16 +26,16 @@ repos:
       types: [python]
       require_serial: true
       stages: [push]
+    - id: mypy
+      name: mypy
+      entry: mypy
+      language: system
+      types: [python]
+      pass_filenames: false
+      stages: [push]
 - repo: https://github.com/python-poetry/poetry
-  rev: 1.8.0
+  rev: 2.2.1
   hooks:
     - id: poetry-check
     - id: poetry-lock
-    - id: poetry-export
     - id: poetry-install
-# version madness
-# -   repo: https://github.com/mattseymour/pre-commit-pytype
-#     rev: 2023.5.8
-#     hooks:
-#     - id: pytype
-#       stages: [push]

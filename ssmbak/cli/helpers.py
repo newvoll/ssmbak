@@ -5,17 +5,9 @@ import os
 from pathlib import Path
 
 import boto3
-
-from cfn_flip import load_yaml
+from cfnlint.decode import cfn_yaml  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
-
-
-def slurp(filename):
-    """Suck a file into a str."""
-    with open(filename, encoding="utf-8") as x:
-        f = x.read()
-    return f
 
 
 def sort_bucket(bucketname, region):
@@ -29,7 +21,7 @@ def sort_bucket(bucketname, region):
     else:
         template_dir = Path(__file__).parent.parent
         template_file = f"{template_dir}/data/cfn.yml"
-        template = load_yaml(slurp(template_file))
+        template = cfn_yaml.load(template_file)
         key = template["Resources"]["BucketParam"]["Properties"]["Name"]
         ssm = boto3.client(
             "ssm", endpoint_url=os.getenv("AWS_ENDPOINT"), region_name=region

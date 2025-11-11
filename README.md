@@ -17,8 +17,8 @@ Params to a point in time.
     * `ssmbak restore` cli, which uses
 	* the well-tested [library](https://ssmbak.readthedocs.io/en/latest/ssmbak.restore.html#module-ssmbak.restore.actions)
 ```
-from ssmbak.restore.actions import Path
-Path.restore()
+from ssmbak.restore.actions import ParamPath
+ParamPath.restore()
 ```
 
 # Quickstart
@@ -80,9 +80,9 @@ it (UTC), and sleep some more to give ssmbak some time to back them
 up.
 
 ```
-sleep 30
+sleep 120
 IN_BETWEEN=`date -u +"%Y-%m-%dT%H:%M:%S"`
-sleep 30
+sleep 120
 ```
 
 They're all set to `inital`.
@@ -119,7 +119,7 @@ Let's sleep a bit before marking the time. Then we see that
 #2 for each is set to `UPDATED`:
 
 ```
-sleep 30
+sleep 120
 UPDATED_MARK=`date -u +"%Y-%m-%dT%H:%M:%S"`
 aws ssm get-parameters-by-path --path /testyssmbak --recursive \
   | perl -ne '@h=split; print "$h[4] \t\t $h[6]\n";'
@@ -139,7 +139,7 @@ When we preview the IN_BETWEEN point-in-time, we see that everything
 was `initial` at that time.
 
 > [!NOTE]
-> Paths end with a slash, which is why key `/testyssmbak` doesn't show
+> ParamPaths end with a slash, which is why key `/testyssmbak` doesn't show
 > up in the previews.
 
 ```
@@ -244,7 +244,7 @@ END_MARK=`date -u +"%Y-%m-%dT%H:%M:%S"`
 aws ssm get-parameters-by-path --path /testyssmbak --recursive \
   | perl -ne '@h=split; print "$h[4] ";' \
   | xargs aws ssm delete-parameters --names
-sleep 30
+sleep 120
 ```
 ```
 DELETEDPARAMETERS       /testyssmbak
@@ -259,7 +259,7 @@ DELETEDPARAMETERS       /testyssmbak/deeper/3
 And pretend we made a mistake. Oh no! We want them all back. Let's give ssmbak some time to process and see what we can restore.
 
 ```
-sleep 30
+sleep 120
 ssmbak preview /testyssmbak/ $END_MARK --recursive
 ```
 ```
@@ -359,10 +359,10 @@ ssmbak-bucket-dkvp9oegrx2y
 
 Session:
 ```
->>> from ssmbak.restore.actions import Path
+>>> from ssmbak.restore.actions import ParamPath
 >>> from datetime import datetime, timezone
 >>> in_between = datetime.strptime("2024-06-13T01:55:26", "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
->>> path = Path("/testoossmbak", in_between, "us-west-2", "ssmbak-bucket-dkvp9oegrx2y", recurse=True)
+>>> path = ParamPath("/testoossmbak", in_between, "us-west-2", "ssmbak-bucket-dkvp9oegrx2y", recurse=True)
 >>> path.preview()
 [{'Name': '/testoossmbak/deep/yay', 'Deleted': True, 'Modified': datetime.datetime(2024, 6, 13, 1, 50, 22, tzinfo=tzutc())}]
 >>> path.restore()

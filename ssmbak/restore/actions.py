@@ -8,13 +8,13 @@ bunch. You can choose whether to operate on the path recursively
 
 Typical usage example (note trailing slash for path/):
 
-from ssmbak.restore.actions import Path
+from ssmbak.restore.actions import ParamPath
 
 from datetime import datetime, timezone
 
 point_in_time = datetime(2023, 8, 3, 21, 9, 31, tzinfo=timezone.utc)
 
-path = Path("/some/ssm/path/", point_in_time, "us-west-2", mys3bucket, recurse=True)
+path = ParamPath("/some/ssm/path/", point_in_time, "us-west-2", mys3bucket, recurse=True)
 
 previews = path.preview()
 
@@ -23,21 +23,22 @@ path.restore()  #  == previews
 
 import logging
 from datetime import datetime, timezone
+from typing import cast
 
 from ssmbak.restore.aws import Resource
-from ssmbak.typing import Preview, Version
+from ssmbak.typing import Preview, SSMType, Version
 
 logger = logging.getLogger(__name__)
 
 
-class Path(Resource):
+class ParamPath(Resource):
     """An s3/ssm key or a path to restore to a point in time.
 
     SSM Parms will be restored to their values at checktime. If params
-    were deleted at that time, they will be deleted upon Path.restore().
+    were deleted at that time, they will be deleted upon ParamPath.restore().
     The lambda will back up any ssm change to exactly the same key in
     the configured s3 bucket.  Multiple keys not in the same path will
-    have to instantiate a Path object for each one.
+    have to instantiate a ParamPath object for each one.
 
     Attributes:
       :param name: A string of the ssm/s3 key or path
@@ -69,7 +70,7 @@ class Path(Resource):
         self.name = name  # .rstrip("/")
         self.checktime = checktime
         self.recurse = recurse
-        self.versions = {}
+        self.versions: dict[str, Version] = {}
         super().__init__(region, bucketname)
 
     def __repr__(self):
@@ -225,27 +226,33 @@ class Path(Resource):
               "Value": "318Z27",
           }
         """
-        res = {"Name": name}
         version = self.get_latest_version(name)
-        if "Deleted" in version:
-            res["Deleted"] = True
-            res["Modified"] = version["LastModified"]
-        elif version:
-            res["Value"] = version["Body"]
-            tagset = version["tagset"]
-            res["Type"] = tagset["ssmbakType"]
-            res["Modified"] = datetime.fromtimestamp(
-                int(tagset["ssmbakTime"]), tz=timezone.utc
-            )
-            if "ssmbakDescription" in tagset:
-                res["Description"] = tagset["ssmbakDescription"]
-        else:
+        if version is None:
             logger.warning(
                 "Key %s doesn't have a version before %s", name, self.checktime
             )
-        return res
+            return {"Name": name, "Modified": datetime.now(tz=timezone.utc)}
+        elif "Deleted" in version:
+            return {
+                "Name": name,
+                "Deleted": True,
+                "Modified": version["LastModified"],
+            }
+        # Normal case
+        tagset = version["tagset"]
+        result: Preview = {
+            "Name": name,
+            "Value": version["Body"],
+            "Type": cast(SSMType, tagset["ssmbakType"]),
+            "Modified": datetime.fromtimestamp(
+                int(tagset["ssmbakTime"]), tz=timezone.utc
+            ),
+        }
+        if "ssmbakDescription" in tagset:
+            result["Description"] = tagset["ssmbakDescription"]
+        return result
 
-    def get_latest_version(self, name: str) -> Version:
+    def get_latest_version(self, name: str) -> Version | None:
         """Gets the concise latest version of a particular s3/ssm key.
 
         Returns from the self.versions cache if it includes the key,
@@ -275,11 +282,11 @@ class Path(Resource):
                 version = all_versions[name]
                 self.versions[name] = version
             except KeyError:
-                version = {}
+                return None
         try:
             if "Deleted" not in version and "Body" not in version:
                 version["Body"] = self._get_version_body(name, version["VersionId"])
         except (IndexError, KeyError):
             logger.debug("No versions")
-            version = {}
+            return None
         return version
