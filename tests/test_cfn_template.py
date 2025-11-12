@@ -4,6 +4,8 @@ Validates that template loading and manipulation works correctly.
 Used to verify compatibility when switching YAML parsers.
 """
 
+# pylint: skip-file
+
 import logging
 from pathlib import Path
 
