@@ -3,20 +3,24 @@
 Not to be handled directly.
 """
 
+from __future__ import annotations
+
 import logging
 import os
 from datetime import datetime, timezone
 from functools import cached_property
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 import boto3
 import botocore
 from botocore.exceptions import ClientError
-from mypy_boto3_s3 import S3Client
-from mypy_boto3_s3.service_resource import S3ServiceResource
-from mypy_boto3_s3.type_defs import GetObjectOutputTypeDef
-from mypy_boto3_ssm import SSMClient
-from mypy_boto3_ssm.type_defs import PutParameterRequestTypeDef
+
+if TYPE_CHECKING:
+    from mypy_boto3_s3 import S3Client
+    from mypy_boto3_s3.service_resource import S3ServiceResource
+    from mypy_boto3_s3.type_defs import GetObjectOutputTypeDef
+    from mypy_boto3_ssm import SSMClient
+    from mypy_boto3_ssm.type_defs import PutParameterRequestTypeDef
 
 from ssmbak.typing import Preview, Version
 
