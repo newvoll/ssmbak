@@ -21,7 +21,10 @@ repos:
   hooks:
     - id: pylint
       name: pylint
-      entry: bash -c 'poetry run pylint $(git ls-files "*.py")'
+      entry: bash -c 'poetry run pylint'
+      args:
+        - ssmbak/
+        - tests/
       language: system
       require_serial: true
       pass_filenames: false
