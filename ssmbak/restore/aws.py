@@ -371,8 +371,8 @@ class Resource:
             tagtime = self._tagtime(version)
             # ssmbakTime is truncated to seconds (losing microseconds) when stored
             # So compare at second-level precision to be fair
-            # Use < to mean "event happened in an earlier second"
-            if tagtime.replace(microsecond=0) < checktime.replace(microsecond=0):
+            # Use <= to mean "event happened at or before this second"
+            if tagtime.replace(microsecond=0) <= checktime.replace(microsecond=0):
                 # Collect all versions that pass the time filter
                 if param_key not in candidates:
                     candidates[param_key] = []
