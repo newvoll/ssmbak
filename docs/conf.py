@@ -16,6 +16,7 @@ project = "ssmbak"
 copyright = "2024, olmouse"
 author = "olmouse"
 release = version("ssmbak")
+version = release
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
