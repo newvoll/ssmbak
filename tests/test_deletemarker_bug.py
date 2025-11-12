@@ -10,12 +10,13 @@ import pytest
 
 from ssmbak.backup import ssmbak
 from ssmbak.restore.actions import ParamPath
-from tests import helpers
+from tests import helpers, local_lambda
 
 logger = logging.getLogger(__name__)
 
 
-def test_recreated_parameter_after_delete():
+@pytest.mark.parametrize("backup_source", [local_lambda, ssmbak])
+def test_recreated_parameter_after_delete(backup_source):
     """Tests timestamp-based filtering for DeleteMarkers vs backup Versions.
 
     Timeline:
@@ -32,14 +33,18 @@ def test_recreated_parameter_after_delete():
     regular Versions, and the first matching version for each Key blocks
     all subsequent versions from being considered, regardless of timestamps.
     """
+    if backup_source == local_lambda and not pytest.check_local():
+        pytest.skip()
+
     name = f"{pytest.test_path}/{helpers.rando()}"
 
     # Step 1: Create initial parameter and capture timestamp
     logger.info("Creating initial parameter: %s", name)
     message = helpers.prep_message(name, "Create", "String", description=False)
     action = ssmbak.process_message(message)
+    backup_action = getattr(backup_source, "process_message")(message)
     pytest.ssm.put_parameter(Name=name, Value="initial", Type="String", Overwrite=True)
-    ssmbak.backup(action)
+    getattr(backup_source, "backup")(helpers.update_time(backup_action))
     time.sleep(1)
     t1 = datetime.now(tz=timezone.utc)
     logger.info("T1 (after create): %s", t1)
@@ -53,7 +58,8 @@ def test_recreated_parameter_after_delete():
     delete_message = helpers.prep_message(name, "Delete", "String")
     delete_action = ssmbak.process_message(delete_message)
     delete_action = helpers.update_time(delete_action)
-    ssmbak.backup(delete_action)
+    delete_backup_action = getattr(backup_source, "process_message")(delete_message)
+    getattr(backup_source, "backup")(helpers.update_time(delete_backup_action))
     time.sleep(1)
     t2 = datetime.now(tz=timezone.utc)
     logger.info("T2 (after delete): %s", t2)
@@ -66,10 +72,11 @@ def test_recreated_parameter_after_delete():
     recreate_message = helpers.prep_message(name, "Create", "String", description=False)
     recreate_action = ssmbak.process_message(recreate_message)
     recreate_action = helpers.update_time(recreate_action)
+    recreate_backup_action = getattr(backup_source, "process_message")(recreate_message)
     pytest.ssm.put_parameter(
         Name=name, Value="recreated", Type="String", Overwrite=True
     )
-    ssmbak.backup(recreate_action)
+    getattr(backup_source, "backup")(helpers.update_time(recreate_backup_action))
     time.sleep(1)
     t3 = datetime.now(tz=timezone.utc)
     logger.info("T3 (after recreate): %s", t3)

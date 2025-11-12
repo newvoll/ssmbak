@@ -352,16 +352,14 @@ class Resource:
         # (DeleteMarkers before Versions, as in original code)
         all_versions = self._collect_all_candidate_versions(key, recurse, paginated)
 
-        # Step 3: Select first qualifying version for each key
-        # S3 returns versions in reverse chronological order (most recent first)
-        # by LastModified, so the first version that passes time check is correct
+        # Step 3: Select version with latest event time for each key
+        # Cannot rely on LastModified order - must check event times (ssmbakTime tags)
+        # to find the version with the latest event time before checktime
         result = {}
-        seen_keys: set[str] = set()
+        candidates: dict[str, list] = {}
 
         for version in all_versions:
             param_key = version["Key"]
-            if param_key in seen_keys:
-                continue  # Already found most recent for this key
 
             # Fetch tags and check time
             version["tagset"] = self._get_tagset(param_key, version["VersionId"])
@@ -370,8 +368,16 @@ class Resource:
             # So compare at second-level precision to be fair
             # Use < to mean "event happened in an earlier second"
             if tagtime.replace(microsecond=0) < checktime.replace(microsecond=0):
-                result[param_key] = version
-                seen_keys.add(param_key)
+                # Collect all versions that pass the time filter
+                if param_key not in candidates:
+                    candidates[param_key] = []
+                candidates[param_key].append((tagtime, version))
+
+        # Select version with latest event time for each key
+        for param_key, versions in candidates.items():
+            # Sort by tagtime descending to get latest event time first
+            versions.sort(key=lambda x: x[0], reverse=True)
+            result[param_key] = versions[0][1]
 
         return result
 

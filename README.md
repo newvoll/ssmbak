@@ -323,6 +323,32 @@ ssmbak preview /testyssmbak/ `date -u +"%Y-%m-%dT%H:%M:%S"`
   such errors if it fails.
 
 
+# Backup Guarantees
+
+## Event Time Preservation
+
+- **Regular backups (Create/Update)**: Event time is preserved via S3 object tags (`ssmbakTime`), ensuring accurate point-in-time restore even during Lambda processing delays or outages.
+
+- **Delete markers**: Event time cannot be preserved because S3 delete markers don't support tags. Delete markers use S3's `LastModified` timestamp (when the Lambda processed the delete) instead of the original event time.
+
+## Implications During Outages
+
+If SQS messages queue up during an outage and delete events are processed late:
+
+- **Worst case**: A parameter that was deleted may appear with its last value instead of showing as deleted when querying for a time between the actual deletion and when the Lambda processed it.
+
+- **Safe failure mode**: You might restore previously deleted data (resurrection), but you will never lose data that actually existed at the query time.
+
+**Example**:
+- T1: Parameter has value "important"
+- T2: Parameter deleted
+- T3-T10: Lambda outage (delete event queued)
+- T11: Lambda processes delete, creates delete marker with LastModified=T11
+- Query at T5: Returns "important" (last backup before T5) instead of showing deleted
+
+This is an inherent limitation of S3 delete markers not supporting tags.
+
+
 # Scripts
 * `ssmbak-all` will back up all SSM params to the bucket. You can also give it a path.
 

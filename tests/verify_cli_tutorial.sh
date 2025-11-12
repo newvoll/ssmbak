@@ -5,7 +5,8 @@
 set -uo pipefail
 
 # Configuration
-SLEEP_TIME="${SSMBAK_SLEEP:-120}"
+SLEEP_TIME="${SSMBAK_SLEEP:-60}"
+SSMBAK_BUCKET="${SSMBAK_BUCKET:-}"
 
 # Colors for output
 RED='\033[0;31m'
@@ -23,6 +24,84 @@ ACTUAL_FILE=$(mktemp)
 
 # Cleanup on exit
 trap 'rm -f "$EXPECTED_FILE" "$ACTUAL_FILE"' EXIT
+
+# Helper function to print human-readable UTC timestamp
+print_timestamp() {
+    echo "[$(date -u +"%Y-%m-%d %H:%M:%S UTC")]"
+}
+
+# Helper function to show S3 versions for debugging
+show_s3_versions() {
+    local prefix="$1"
+    echo ""
+    echo "=== S3 Versions for $prefix ==="
+    if [ -z "$SSMBAK_BUCKET" ]; then
+        echo "SSMBAK_BUCKET not set, skipping S3 version check"
+        return
+    fi
+    echo "Bucket: $SSMBAK_BUCKET"
+    echo "Prefix: $prefix"
+    echo "$ aws s3api list-object-versions --bucket $SSMBAK_BUCKET --prefix $prefix --output json"
+    local output
+    output=$(aws s3api list-object-versions --bucket "$SSMBAK_BUCKET" --prefix "$prefix" --output json 2>&1)
+    local exit_code=$?
+
+    echo "Exit code: $exit_code"
+    echo "Raw output length: ${#output} bytes"
+
+    if [ "$exit_code" -ne 0 ]; then
+        echo "AWS CLI error:"
+        echo "$output"
+    elif echo "$output" | jq -e . >/dev/null 2>&1; then
+        local version_count=$(echo "$output" | jq '(.Versions // []) | length')
+        local delete_count=$(echo "$output" | jq '(.DeleteMarkers // []) | length')
+        echo "Found: $version_count versions, $delete_count delete markers"
+
+        if [ "$version_count" -gt 0 ] || [ "$delete_count" -gt 0 ]; then
+            echo "$output" | jq -r '
+                ((.Versions // []) + (.DeleteMarkers // [] | map(. + {IsDeleteMarker: true}))) |
+                sort_by(.LastModified) | reverse |
+                .[] |
+                [
+                    .Key,
+                    (.VersionId[0:8] // "N/A"),
+                    .LastModified,
+                    (.IsLatest // false),
+                    (if .IsDeleteMarker then "DELETE" else (.Size // 0) end)
+                ] | @tsv
+            ' | column -t -s $'\t'
+        fi
+    else
+        echo "Invalid JSON response:"
+        echo "$output" | head -20
+    fi
+    echo "=== End S3 Versions ==="
+    echo ""
+}
+
+# Helper function to retry on failure
+# Usage: retry_on_failure "test_name" command_function
+# Returns 0 on success, 1 on failure after retry
+retry_on_failure() {
+    local test_name="$1"
+    local test_function="$2"
+
+    if $test_function; then
+        return 0
+    else
+        echo -e "${YELLOW}⚠ Test failed, waiting 120 seconds before retry...${NC}"
+        echo "$(print_timestamp) Starting 120s wait for retry"
+        sleep 120
+        echo "$(print_timestamp) Retrying: $test_name"
+
+        if $test_function; then
+            echo -e "${GREEN}✓ Test passed on retry${NC}"
+            return 0
+        else
+            return 1
+        fi
+    fi
+}
 
 echo "====================================="
 echo "CLI Tutorial Verification Script"
@@ -42,6 +121,7 @@ compare_output() {
     if diff -q "$EXPECTED_FILE" "$ACTUAL_FILE" > /dev/null 2>&1; then
         echo -e "${GREEN}✓ PASS${NC}: $test_name"
         ((PASS_COUNT++))
+        return 0
     else
         echo -e "${RED}✗ FAIL${NC}: $test_name"
         echo "--- Expected ---"
@@ -52,6 +132,7 @@ compare_output() {
         diff "$EXPECTED_FILE" "$ACTUAL_FILE" || true
         echo ""
         ((FAIL_COUNT++))
+        return 1
     fi
 }
 
@@ -65,6 +146,9 @@ check_values() {
     local actual=$(aws ssm get-parameters-by-path --path /testyssmbak --recursive \
         | perl -ne '@h=split; print "$h[4] \t\t $h[6]\n";')
 
+    # Display the output
+    echo "$actual"
+
     local all_match=true
     for param in "${params[@]}"; do
         if ! echo "$actual" | grep -q "$param.*$expected_value"; then
@@ -76,161 +160,245 @@ check_values() {
     if $all_match; then
         echo -e "${GREEN}✓ PASS${NC}: $test_name"
         ((PASS_COUNT++))
+        return 0
     else
         echo -e "${RED}✗ FAIL${NC}: $test_name"
         echo "Expected all parameters to have value: $expected_value"
-        echo "Actual output:"
-        echo "$actual"
         echo ""
         ((FAIL_COUNT++))
+        return 1
     fi
 }
 
-echo "Step 1: Creating test parameters..."
-aws ssm put-parameter --name /testyssmbak --value initial --type String --overwrite > /dev/null
+echo "$(print_timestamp) Step 1: Creating test parameters..."
+echo "$ aws ssm put-parameter --name /testyssmbak --value initial --type String --overwrite"
+aws ssm put-parameter --name /testyssmbak --value initial --type String --overwrite
 for i in $(seq 3); do
-    aws ssm put-parameter --name /testyssmbak/$i --value initial --type String --overwrite > /dev/null
-    aws ssm put-parameter --name /testyssmbak/deeper/$i --value initial --type String --overwrite > /dev/null
+    echo "$ aws ssm put-parameter --name /testyssmbak/$i --value initial --type String --overwrite"
+    aws ssm put-parameter --name /testyssmbak/$i --value initial --type String --overwrite
+    echo "$ aws ssm put-parameter --name /testyssmbak/deeper/$i --value initial --type String --overwrite"
+    aws ssm put-parameter --name /testyssmbak/deeper/$i --value initial --type String --overwrite
 done
 echo "Created 7 parameters"
 
 echo ""
-echo "Step 2: Waiting ${SLEEP_TIME}s for Lambda to process..."
+echo "$(print_timestamp) Step 2: Waiting ${SLEEP_TIME}s for Lambda to process..."
 sleep "$SLEEP_TIME"
 
-echo "Step 3: Marking IN_BETWEEN timestamp..."
+show_s3_versions "testyssmbak"
+
+echo "$(print_timestamp) Step 3: Marking IN_BETWEEN timestamp..."
 IN_BETWEEN=$(date -u +"%Y-%m-%dT%H:%M:%S")
 echo "IN_BETWEEN=$IN_BETWEEN"
 
 echo ""
-echo "Step 4: Waiting another ${SLEEP_TIME}s..."
+echo "$(print_timestamp) Step 4: Waiting another ${SLEEP_TIME}s..."
 sleep "$SLEEP_TIME"
 
-echo "Step 5: Verifying all parameters are 'initial'..."
-check_values "All params initially 'initial'" "initial" \
-    "/testyssmbak/1" "/testyssmbak/2" "/testyssmbak/3" \
-    "/testyssmbak/deeper/1" "/testyssmbak/deeper/2" "/testyssmbak/deeper/3"
+echo "$(print_timestamp) Step 5: Verifying all parameters are 'initial'..."
+verify_step5() {
+    echo "$ aws ssm get-parameters-by-path --path /testyssmbak --recursive"
+    check_values "All params initially 'initial'" "initial" \
+        "/testyssmbak/1" "/testyssmbak/2" "/testyssmbak/3" \
+        "/testyssmbak/deeper/1" "/testyssmbak/deeper/2" "/testyssmbak/deeper/3"
+}
+retry_on_failure "Step 5 verification" verify_step5
 
 echo ""
-echo "Step 6: Updating parameter #2 to 'UPDATED'..."
-aws ssm put-parameter --name /testyssmbak/2 --value UPDATED --type String --overwrite > /dev/null
-aws ssm put-parameter --name /testyssmbak/deeper/2 --value UPDATED --type String --overwrite > /dev/null
+echo "$(print_timestamp) Step 6: Updating parameter #2 to 'UPDATED'..."
+echo "$ aws ssm put-parameter --name /testyssmbak/2 --value UPDATED --type String --overwrite"
+aws ssm put-parameter --name /testyssmbak/2 --value UPDATED --type String --overwrite
+echo "$ aws ssm put-parameter --name /testyssmbak/deeper/2 --value UPDATED --type String --overwrite"
+aws ssm put-parameter --name /testyssmbak/deeper/2 --value UPDATED --type String --overwrite
 
 echo ""
-echo "Step 7: Waiting ${SLEEP_TIME}s before marking UPDATED_MARK..."
+echo "$(print_timestamp) Step 7: Waiting ${SLEEP_TIME}s before marking UPDATED_MARK..."
 sleep "$SLEEP_TIME"
 
-echo "Step 8: Marking UPDATED_MARK timestamp..."
+echo "$(print_timestamp) Step 8: Marking UPDATED_MARK timestamp..."
 UPDATED_MARK=$(date -u +"%Y-%m-%dT%H:%M:%S")
 echo "UPDATED_MARK=$UPDATED_MARK"
 
 echo ""
-echo "Step 9: Verifying #2 parameters are 'UPDATED'..."
-actual=$(aws ssm get-parameters-by-path --path /testyssmbak --recursive \
-    | perl -ne '@h=split; print "$h[4] \t\t $h[6]\n";')
+echo "$(print_timestamp) Step 9: Verifying #2 parameters are 'UPDATED'..."
+verify_step9() {
+    echo "$ aws ssm get-parameters-by-path --path /testyssmbak --recursive"
+    actual=$(aws ssm get-parameters-by-path --path /testyssmbak --recursive \
+        | perl -ne '@h=split; print "$h[4] \t\t $h[6]\n";')
 
-if echo "$actual" | grep -q "/testyssmbak/2.*UPDATED" && \
-   echo "$actual" | grep -q "/testyssmbak/deeper/2.*UPDATED"; then
-    echo -e "${GREEN}✓ PASS${NC}: Parameters #2 updated to 'UPDATED'"
-    ((PASS_COUNT++))
-else
-    echo -e "${RED}✗ FAIL${NC}: Parameters #2 should be 'UPDATED'"
+    # Display the output
     echo "$actual"
-    ((FAIL_COUNT++))
+
+    if echo "$actual" | grep -q "/testyssmbak/2.*UPDATED" && \
+       echo "$actual" | grep -q "/testyssmbak/deeper/2.*UPDATED"; then
+        echo -e "${GREEN}✓ PASS${NC}: Parameters #2 updated to 'UPDATED'"
+        ((PASS_COUNT++))
+        return 0
+    else
+        echo -e "${RED}✗ FAIL${NC}: Parameters #2 should be 'UPDATED'"
+        ((FAIL_COUNT++))
+        return 1
+    fi
+}
+retry_on_failure "Step 9 verification" verify_step9
+
+echo ""
+echo "$(print_timestamp) Step 10: Testing preview at IN_BETWEEN (should show all 'initial')..."
+verify_step10() {
+    echo "$ poetry run ssmbak -v preview /testyssmbak/ \"$IN_BETWEEN\" --recursive"
+    preview_output=$(poetry run ssmbak -v preview /testyssmbak/ "$IN_BETWEEN" --recursive)
+    echo "$preview_output"
+
+    # Check if preview shows initial values for all parameters
+    # Count lines with "initial" in them (should be at least 6)
+    initial_count=$(echo "$preview_output" | grep -c "| initial |" || true)
+    # Check that UPDATED doesn't appear
+    updated_count=$(echo "$preview_output" | grep -c "| UPDATED |" || true)
+    # Check for deleted markers - should be 0
+    deleted_count=$(echo "$preview_output" | grep -c "| True" || true)
+
+    if [ "$initial_count" -ge 6 ] && [ "$updated_count" -eq 0 ] && [ "$deleted_count" -eq 0 ]; then
+        echo -e "${GREEN}✓ PASS${NC}: Preview at IN_BETWEEN shows 'initial' values for all parameters"
+        ((PASS_COUNT++))
+        return 0
+    else
+        echo -e "${RED}✗ FAIL${NC}: Preview at IN_BETWEEN should show only 'initial' values"
+        echo "  Found: initial=$initial_count (need >=6), updated=$updated_count (need 0), deleted=$deleted_count (need 0)"
+        ((FAIL_COUNT++))
+        return 1
+    fi
+}
+if ! retry_on_failure "Step 10 verification" verify_step10; then
+    show_s3_versions "testyssmbak"
 fi
 
 echo ""
-echo "Step 10: Testing preview at IN_BETWEEN (should show all 'initial')..."
-preview_output=$(poetry run ssmbak -v preview /testyssmbak/ "$IN_BETWEEN" --recursive)
-echo "$preview_output"
-
-# Check if preview shows initial values
-if echo "$preview_output" | grep -q "initial" && \
-   ! echo "$preview_output" | grep -q "UPDATED"; then
-    echo -e "${GREEN}✓ PASS${NC}: Preview at IN_BETWEEN shows 'initial' values"
-    ((PASS_COUNT++))
-else
-    echo -e "${RED}✗ FAIL${NC}: Preview at IN_BETWEEN should show only 'initial' values"
-    ((FAIL_COUNT++))
-fi
-
-echo ""
-echo "Step 11: Testing restore to IN_BETWEEN..."
+echo "$(print_timestamp) Step 11: Testing restore to IN_BETWEEN..."
+echo "$ poetry run ssmbak -v restore /testyssmbak/ \"$IN_BETWEEN\" --recursive"
 restore_output=$(poetry run ssmbak -v restore /testyssmbak/ "$IN_BETWEEN" --recursive)
 echo "$restore_output"
 
 # Verify parameters are restored to initial
 sleep 5  # Brief wait for restore to complete
-check_values "After restore to IN_BETWEEN, all 'initial'" "initial" \
-    "/testyssmbak/1" "/testyssmbak/2" "/testyssmbak/3" \
-    "/testyssmbak/deeper/1" "/testyssmbak/deeper/2" "/testyssmbak/deeper/3"
+verify_step11() {
+    echo "$ aws ssm get-parameters-by-path --path /testyssmbak --recursive"
+    check_values "After restore to IN_BETWEEN, all 'initial'" "initial" \
+        "/testyssmbak/1" "/testyssmbak/2" "/testyssmbak/3" \
+        "/testyssmbak/deeper/1" "/testyssmbak/deeper/2" "/testyssmbak/deeper/3"
+}
+retry_on_failure "Step 11 verification" verify_step11
 
 echo ""
-echo "Step 12: Testing single parameter restore to UPDATED_MARK..."
-preview_single=$(poetry run ssmbak -v preview /testyssmbak/deeper/2 "$UPDATED_MARK")
-echo "$preview_single"
+echo "$(print_timestamp) Step 12: Testing single parameter restore to UPDATED_MARK..."
+verify_step12() {
+    echo "$ poetry run ssmbak -v preview /testyssmbak/deeper/2 \"$UPDATED_MARK\""
+    preview_single=$(poetry run ssmbak -v preview /testyssmbak/deeper/2 "$UPDATED_MARK")
+    echo "$preview_single"
 
-if echo "$preview_single" | grep -q "/testyssmbak/deeper/2.*UPDATED"; then
-    echo -e "${GREEN}✓ PASS${NC}: Preview shows /testyssmbak/deeper/2 as 'UPDATED'"
-    ((PASS_COUNT++))
-else
-    echo -e "${RED}✗ FAIL${NC}: Preview should show 'UPDATED' for /testyssmbak/deeper/2"
-    ((FAIL_COUNT++))
-fi
+    # Check that the specific parameter shows UPDATED and is not deleted
+    if echo "$preview_single" | grep -q "| /testyssmbak/deeper/2 " && \
+       echo "$preview_single" | grep -q "| UPDATED |" && \
+       ! echo "$preview_single" | grep -q "| True"; then
+        echo -e "${GREEN}✓ PASS${NC}: Preview shows /testyssmbak/deeper/2 as 'UPDATED'"
+        ((PASS_COUNT++))
+        return 0
+    else
+        echo -e "${RED}✗ FAIL${NC}: Preview should show 'UPDATED' for /testyssmbak/deeper/2 (not deleted)"
+        ((FAIL_COUNT++))
+        return 1
+    fi
+}
+retry_on_failure "Step 12 verification" verify_step12
 
 echo ""
-echo "Step 13: Restoring single parameter..."
-poetry run ssmbak -v restore /testyssmbak/deeper/2 "$UPDATED_MARK" > /dev/null
+echo "$(print_timestamp) Step 13: Restoring single parameter..."
+echo "$ poetry run ssmbak -v restore /testyssmbak/deeper/2 \"$UPDATED_MARK\""
+poetry run ssmbak -v restore /testyssmbak/deeper/2 "$UPDATED_MARK"
 
 sleep 5
-actual=$(aws ssm get-parameter --name /testyssmbak/deeper/2 --query 'Parameter.Value' --output text)
-if [ "$actual" = "UPDATED" ]; then
-    echo -e "${GREEN}✓ PASS${NC}: /testyssmbak/deeper/2 restored to 'UPDATED'"
-    ((PASS_COUNT++))
-else
-    echo -e "${RED}✗ FAIL${NC}: /testyssmbak/deeper/2 should be 'UPDATED', got: $actual"
-    ((FAIL_COUNT++))
-fi
+verify_step13() {
+    echo "$ aws ssm get-parameter --name /testyssmbak/deeper/2 --query 'Parameter.Value' --output text"
+    actual=$(aws ssm get-parameter --name /testyssmbak/deeper/2 --query 'Parameter.Value' --output text)
+
+    # Display the output
+    echo "$actual"
+
+    if [ "$actual" = "UPDATED" ]; then
+        echo -e "${GREEN}✓ PASS${NC}: /testyssmbak/deeper/2 restored to 'UPDATED'"
+        ((PASS_COUNT++))
+        return 0
+    else
+        echo -e "${RED}✗ FAIL${NC}: /testyssmbak/deeper/2 should be 'UPDATED', got: $actual"
+        ((FAIL_COUNT++))
+        return 1
+    fi
+}
+retry_on_failure "Step 13 verification" verify_step13
 
 echo ""
-echo "Step 14: Marking END_MARK and deleting all parameters..."
+echo "$(print_timestamp) Step 14: Marking END_MARK and deleting all parameters..."
 END_MARK=$(date -u +"%Y-%m-%dT%H:%M:%S")
 echo "END_MARK=$END_MARK"
 
+echo "$ aws ssm get-parameters-by-path --path /testyssmbak --recursive"
 params_to_delete=$(aws ssm get-parameters-by-path --path /testyssmbak --recursive \
     | perl -ne '@h=split; print "$h[4] ";')
-aws ssm delete-parameters --names $params_to_delete > /dev/null
+echo "$ aws ssm delete-parameters --names $params_to_delete"
+aws ssm delete-parameters --names $params_to_delete
 
 # Also delete the key (not path)
-aws ssm delete-parameter --name /testyssmbak > /dev/null || true
+echo "$ aws ssm delete-parameter --name /testyssmbak"
+aws ssm delete-parameter --name /testyssmbak 2>/dev/null || true
 
 echo ""
-echo "Step 15: Waiting ${SLEEP_TIME}s for Lambda to process deletions..."
+echo "$(print_timestamp) Step 15: Waiting ${SLEEP_TIME}s for Lambda to process deletions..."
 sleep "$SLEEP_TIME"
 
 echo ""
-echo "Step 16: Testing preview at END_MARK (should show deleted params recoverable)..."
-preview_deleted=$(poetry run ssmbak -v preview /testyssmbak/ "$END_MARK" --recursive)
-echo "$preview_deleted"
+echo "$(print_timestamp) Step 16: Testing preview at END_MARK (should show deleted params recoverable)..."
+verify_step16() {
+    echo "$ poetry run ssmbak -v preview /testyssmbak/ \"$END_MARK\" --recursive"
+    preview_deleted=$(poetry run ssmbak -v preview /testyssmbak/ "$END_MARK" --recursive)
+    echo "$preview_deleted"
 
-# Check that preview shows the parameters (they should be recoverable)
-param_count=$(echo "$preview_deleted" | grep -c "/testyssmbak/" || true)
-if [ "$param_count" -ge 6 ]; then
-    echo -e "${GREEN}✓ PASS${NC}: Preview at END_MARK shows recoverable parameters"
-    ((PASS_COUNT++))
-else
-    echo -e "${RED}✗ FAIL${NC}: Preview should show 6 recoverable parameters, found: $param_count"
-    ((FAIL_COUNT++))
+    # Check that preview shows the parameters with actual values (recoverable)
+    # Count parameters that have the path pattern
+    param_count=$(echo "$preview_deleted" | grep -c "/testyssmbak/" || true)
+    # Count how many show as deleted (these should be marked recoverable)
+    # For deleted params at END_MARK, they should show values from before deletion
+    # Check that we have at least 6 parameters and they're not all showing empty values
+    non_empty_values=$(echo "$preview_deleted" | grep "/testyssmbak/" | grep -cv "| \+|" || true)
+
+    if [ "$param_count" -ge 6 ] && [ "$non_empty_values" -ge 6 ]; then
+        echo -e "${GREEN}✓ PASS${NC}: Preview at END_MARK shows recoverable parameters with values"
+        ((PASS_COUNT++))
+        return 0
+    else
+        echo -e "${RED}✗ FAIL${NC}: Preview should show 6 recoverable parameters with values"
+        echo "  Found: param_count=$param_count (need >=6), non_empty_values=$non_empty_values (need >=6)"
+        ((FAIL_COUNT++))
+        return 1
+    fi
+}
+if ! retry_on_failure "Step 16 verification" verify_step16; then
+    show_s3_versions "testyssmbak"
 fi
 
 echo ""
-echo "Step 17: Testing path vs key distinction..."
+echo "$(print_timestamp) Step 17: Testing path vs key distinction..."
 # Recreate /testyssmbak key for this test
-aws ssm put-parameter --name /testyssmbak --value initial --type String --overwrite > /dev/null
+echo "$ aws ssm put-parameter --name /testyssmbak --value initial --type String --overwrite"
+aws ssm put-parameter --name /testyssmbak --value initial --type String --overwrite
 sleep 10
 
-key_preview=$(poetry run ssmbak -v preview /testyssmbak "$(date -u +"%Y-%m-%dT%H:%M:%S")")
-path_preview=$(poetry run ssmbak -v preview /testyssmbak/ "$(date -u +"%Y-%m-%dT%H:%M:%S")")
+STEP17_TIME=$(date -u +"%Y-%m-%dT%H:%M:%S")
+echo "$ poetry run ssmbak -v preview /testyssmbak \"$STEP17_TIME\""
+key_preview=$(poetry run ssmbak -v preview /testyssmbak "$STEP17_TIME")
+echo "$key_preview"
+echo ""
+echo "$ poetry run ssmbak -v preview /testyssmbak/ \"$STEP17_TIME\""
+path_preview=$(poetry run ssmbak -v preview /testyssmbak/ "$STEP17_TIME")
+echo "$path_preview"
 
 # Key preview should show just /testyssmbak
 if echo "$key_preview" | grep -q "^| /testyssmbak " && \
