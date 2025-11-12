@@ -10,6 +10,8 @@ SSMType = Literal["SecureString", "String", "StringList"]
 
 # Version has tags in it; previews don't
 class Version(TypedDict):
+    """S3 object version with tagset metadata."""
+
     Key: str
     VersionId: str
     LastModified: datetime
@@ -23,6 +25,8 @@ class Version(TypedDict):
 
 
 class Preview(TypedDict):
+    """Preview information for SSM parameter restore."""
+
     Name: str
     Modified: datetime
     Deleted: NotRequired[bool]

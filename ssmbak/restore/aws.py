@@ -7,7 +7,7 @@ import logging
 import os
 from datetime import datetime, timezone
 from functools import cached_property
-from typing import ClassVar, Union
+from typing import ClassVar
 
 import boto3
 import botocore
@@ -73,7 +73,7 @@ class Resource:
             "ssm", endpoint_url=os.getenv("AWS_ENDPOINT"), region_name=self.region
         )
 
-    def _tagtime(self, version: dict) -> datetime:
+    def _tagtime(self, version: Version) -> datetime:
         """Extracts datetime from the backup version.
 
         Corresponds to the time of the event and not necessary when it
@@ -249,7 +249,7 @@ class Resource:
         Returns:
           Flat list of all candidate versions (with "Deleted" flag added to DeleteMarkers)
         """
-        all_versions = []
+        all_versions: list[Version] = []
 
         for param_page in paginated:
             page_versions = []
@@ -258,7 +258,11 @@ class Resource:
             delete_markers = []
             if "DeleteMarkers" in param_page:
                 for deleted_version in param_page["DeleteMarkers"]:
+                    # Normalize DeleteMarkers to match Version structure
                     deleted_version["Deleted"] = True
+                    deleted_version["Size"] = 0
+                    deleted_version["ETag"] = ""
+                    deleted_version["StorageClass"] = "STANDARD"
                     delete_markers.append(deleted_version)
             else:
                 logger.debug("no delete markers")

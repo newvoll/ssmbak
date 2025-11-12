@@ -232,7 +232,7 @@ class ParamPath(Resource):
                 "Key %s doesn't have a version before %s", name, self.checktime
             )
             return {"Name": name, "Modified": datetime.now(tz=timezone.utc)}
-        elif "Deleted" in version:
+        if "Deleted" in version:
             return {
                 "Name": name,
                 "Deleted": True,

@@ -10,8 +10,6 @@ from pathlib import Path
 import boto3
 import yaml
 
-from ssmbak.cli import helpers
-
 logger = logging.getLogger(__name__)
 
 
