@@ -15,6 +15,8 @@ import boto3
 import botocore
 from botocore.exceptions import ClientError
 
+from ssmbak.typing import Preview, Version
+
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
     from mypy_boto3_s3.service_resource import S3ServiceResource
@@ -22,7 +24,6 @@ if TYPE_CHECKING:
     from mypy_boto3_ssm import SSMClient
     from mypy_boto3_ssm.type_defs import PutParameterRequestTypeDef
 
-from ssmbak.typing import Preview, Version
 
 logger = logging.getLogger(__name__)
 
