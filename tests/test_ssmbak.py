@@ -19,7 +19,9 @@ NAME = f"{pytest.test_path}/{helpers.rando()}"
 
 def slurp_helper(filename):
     """Slurps up content of helper file with filename."""
-    return helpers.slurp(f"{Path(__file__).parent}/helper_files/{filename}.json")
+    return Path(f"{Path(__file__).parent}/helper_files/{filename}.json").read_text(
+        encoding="utf-8"
+    )
 
 
 def update_name(message_j, the_name):

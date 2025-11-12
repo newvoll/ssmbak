@@ -17,7 +17,7 @@ from botocore.exceptions import ClientError, NoRegionError
 from prettytable import PrettyTable
 
 from ssmbak.cli import helpers
-from ssmbak.restore.actions import Path
+from ssmbak.restore.actions import ParamPath
 
 logger = logging.getLogger(__name__)
 pp = pprint.PrettyPrinter(indent=4)
@@ -74,7 +74,7 @@ checktime = datetime.strptime(args.checktime, "%Y-%m-%dT%H:%M:%S").replace(
 
 
 def main():
-    """Checks for necessary confs, invokes ssmbak method Path.command,
+    """Checks for necessary confs, invokes ssmbak method ParamPath.command,
     and tries to print out a nice table of results..
     """
     if args.verbose:
@@ -105,7 +105,7 @@ def main():
 
 
 def _do_path(bucketname, region):
-    path = Path(args.path, checktime, region, bucketname, recurse=args.recursive)
+    path = ParamPath(args.path, checktime, region, bucketname, recurse=args.recursive)
     return getattr(path, args.command)()
 
 

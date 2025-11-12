@@ -17,8 +17,8 @@ Params to a point in time.
     * `ssmbak restore` cli, which uses
 	* the well-tested [library](https://ssmbak.readthedocs.io/en/latest/ssmbak.restore.html#module-ssmbak.restore.actions)
 ```
-from ssmbak.restore.actions import Path
-Path.restore()
+from ssmbak.restore.actions import ParamPath
+ParamPath.restore()
 ```
 
 # Quickstart
@@ -36,10 +36,20 @@ available for `ssmbak` point-in-time restore via CLI or lib, like:
 `ssmbak preview /my/ssm/path/ 2024-06-15T17:56:58`
 
 
+
 # CLI Tutorial
 
 You'll need the [awcli](https://aws.amazon.com/cli/) unless you want
-to point and click in the AWS management console to follow along..
+to point and click in the AWS management console to follow along.
+
+> [!WARNING]
+> There are sleeps in between steps to give SQS -> Lambda time to process. If AWS is slow, you might have to wait longer.
+
+There's an experimental script in tests/verify_cli_tutorial.sh that
+does the steps. Feel free to follow along with the tail command
+described at the end of the tutorial.
+
+First, create the stack.
 
 ```
 SSMBAK_STACKNAME=ssmbak
@@ -80,9 +90,9 @@ it (UTC), and sleep some more to give ssmbak some time to back them
 up.
 
 ```
-sleep 30
+sleep 120
 IN_BETWEEN=`date -u +"%Y-%m-%dT%H:%M:%S"`
-sleep 30
+sleep 120
 ```
 
 They're all set to `inital`.
@@ -119,7 +129,7 @@ Let's sleep a bit before marking the time. Then we see that
 #2 for each is set to `UPDATED`:
 
 ```
-sleep 30
+sleep 120
 UPDATED_MARK=`date -u +"%Y-%m-%dT%H:%M:%S"`
 aws ssm get-parameters-by-path --path /testyssmbak --recursive \
   | perl -ne '@h=split; print "$h[4] \t\t $h[6]\n";'
@@ -139,7 +149,7 @@ When we preview the IN_BETWEEN point-in-time, we see that everything
 was `initial` at that time.
 
 > [!NOTE]
-> Paths end with a slash, which is why key `/testyssmbak` doesn't show
+> ParamPaths end with a slash, which is why key `/testyssmbak` doesn't show
 > up in the previews.
 
 ```
@@ -244,7 +254,7 @@ END_MARK=`date -u +"%Y-%m-%dT%H:%M:%S"`
 aws ssm get-parameters-by-path --path /testyssmbak --recursive \
   | perl -ne '@h=split; print "$h[4] ";' \
   | xargs aws ssm delete-parameters --names
-sleep 30
+sleep 120
 ```
 ```
 DELETEDPARAMETERS       /testyssmbak
@@ -259,7 +269,7 @@ DELETEDPARAMETERS       /testyssmbak/deeper/3
 And pretend we made a mistake. Oh no! We want them all back. Let's give ssmbak some time to process and see what we can restore.
 
 ```
-sleep 30
+sleep 120
 ssmbak preview /testyssmbak/ $END_MARK --recursive
 ```
 ```
@@ -311,7 +321,32 @@ ssmbak preview /testyssmbak/ `date -u +"%Y-%m-%dT%H:%M:%S"`
 ### CLI Gotchas:
 * You need a bunch of shady permissions to create the stack. Look for
   such errors if it fails.
-* `aws` commands require that the awscli is installed and configured.
+
+
+# Backup Guarantees
+
+## Event Time Preservation
+
+- **Regular backups (Create/Update)**: Event time is preserved via S3 object tags (`ssmbakTime`), ensuring accurate point-in-time restore even during Lambda processing delays or outages.
+
+- **Delete markers**: Event time cannot be preserved because S3 delete markers don't support tags. Delete markers use S3's `LastModified` timestamp (when the Lambda processed the delete) instead of the original event time.
+
+## Implications During Outages
+
+If SQS messages queue up during an outage and delete events are processed late:
+
+- **Worst case**: A parameter that was deleted may appear with its last value instead of showing as deleted when querying for a time between the actual deletion and when the Lambda processed it.
+
+- **Safe failure mode**: You might restore previously deleted data (resurrection), but you will never lose data that actually existed at the query time.
+
+**Example**:
+- T1: Parameter has value "important"
+- T2: Parameter deleted
+- T3-T10: Lambda outage (delete event queued)
+- T11: Lambda processes delete, creates delete marker with LastModified=T11
+- Query at T5: Returns "important" (last backup before T5) instead of showing deleted
+
+This is an inherent limitation of S3 delete markers not supporting tags.
 
 
 # Scripts
@@ -359,10 +394,10 @@ ssmbak-bucket-dkvp9oegrx2y
 
 Session:
 ```
->>> from ssmbak.restore.actions import Path
+>>> from ssmbak.restore.actions import ParamPath
 >>> from datetime import datetime, timezone
 >>> in_between = datetime.strptime("2024-06-13T01:55:26", "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
->>> path = Path("/testoossmbak", in_between, "us-west-2", "ssmbak-bucket-dkvp9oegrx2y", recurse=True)
+>>> path = ParamPath("/testoossmbak", in_between, "us-west-2", "ssmbak-bucket-dkvp9oegrx2y", recurse=True)
 >>> path.preview()
 [{'Name': '/testoossmbak/deep/yay', 'Deleted': True, 'Modified': datetime.datetime(2024, 6, 13, 1, 50, 22, tzinfo=tzutc())}]
 >>> path.restore()

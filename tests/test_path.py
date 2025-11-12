@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from ssmbak.restore.actions import Path
+from ssmbak.restore.actions import ParamPath
 from tests import helpers
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ def get_names(recurse):
 def test_noparams():
     """Make sure doesn't bomb when no params are there_now."""
     in_between = helpers.str2datetime("2023-08-31T09:48:00")
-    path = Path(
+    path = ParamPath(
         f"{pytest.test_path}/",
         in_between,
         pytest.region,
@@ -47,7 +47,7 @@ def test_path(recurse):
     helpers.update_and_check(names)
     # check that restore() returns originals
     in_between = helpers.str2datetime("2023-08-31T09:48:00")
-    path = Path(
+    path = ParamPath(
         f"{pytest.test_path}/",
         in_between,
         pytest.region,
@@ -72,7 +72,7 @@ def test_path(recurse):
     deltime, deleted_params = helpers.delete_params(to_deletes)
     logger.debug("deleted_params %s", deleted_params)
     logger.info("same path, new object with deltime: %s", deltime)
-    path = Path(
+    path = ParamPath(
         f"{pytest.test_path}/",
         deltime,
         pytest.region,
@@ -87,7 +87,7 @@ def test_path(recurse):
     ) == sorted(to_deletes)
     ## check no trailing slash before restore
     logger.warning("slashtest")
-    path_noslash = Path(
+    path_noslash = ParamPath(
         f"{pytest.test_path}",
         in_between,
         pytest.region,

@@ -26,13 +26,6 @@ def pretty(thingy):
     return f"\n{pp.pformat(thingy)}\n"
 
 
-def slurp(filename):
-    """Quick file contents to string."""
-    with open(filename, encoding="utf-8") as x:
-        f = x.read()
-    return f
-
-
 def str2datetime(checktime):
     """For ease of checktime creations."""
     return datetime.strptime(checktime, "%Y-%m-%dT%H:%M:%S").replace(
@@ -142,6 +135,7 @@ def delete_params(names):
         prep(action)
         post_delete_action = update_time(action)
         ssmbak.backup(post_delete_action)
+    time.sleep(1)
     # pylint: disable=fixme
     # TODO: test to make sure deleteds don't appear if not there_now?
     return deltime, deleted_params
