@@ -39,7 +39,13 @@ available for `ssmbak` point-in-time restore via CLI or lib, like:
 # CLI Tutorial
 
 You'll need the [awcli](https://aws.amazon.com/cli/) unless you want
-to point and click in the AWS management console to follow along..
+to point and click in the AWS management console to follow along.
+
+> [!WARNING]
+> There are sleeps in between steps to give SQS -> Lambda time to process. If AWS is slow, you might have to wait longer.
+
+There's an experimental script in tests/verify_cli_tutorial.sh that does the steps.
+
 
 ```
 SSMBAK_STACKNAME=ssmbak
@@ -311,7 +317,6 @@ ssmbak preview /testyssmbak/ `date -u +"%Y-%m-%dT%H:%M:%S"`
 ### CLI Gotchas:
 * You need a bunch of shady permissions to create the stack. Look for
   such errors if it fails.
-* `aws` commands require that the awscli is installed and configured.
 
 
 # Scripts
