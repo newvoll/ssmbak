@@ -21,7 +21,7 @@ repos:
   hooks:
     - id: pylint
       name: pylint
-      entry: bash -c 'pylint $(git ls-files "*.py")'
+      entry: bash -c 'poetry run pylint $(git ls-files "*.py")'
       language: system
       require_serial: true
       pass_filenames: false
@@ -29,7 +29,7 @@ repos:
       stages: [pre-push]
     - id: mypy
       name: mypy
-      entry: mypy
+      entry: bash -c 'poetry run mypy'
       language: system
       args: [ssmbak]
       pass_filenames: false
