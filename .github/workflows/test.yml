@@ -53,4 +53,4 @@ jobs:
           poetry run pylint $(git ls-files '*.py')
 
       - name: mypy
-        run: poetry run mypy
+        run: poetry run mypy ssmbak

@@ -44,8 +44,11 @@ to point and click in the AWS management console to follow along.
 > [!WARNING]
 > There are sleeps in between steps to give SQS -> Lambda time to process. If AWS is slow, you might have to wait longer.
 
-There's an experimental script in tests/verify_cli_tutorial.sh that does the steps.
+There's an experimental script in tests/verify_cli_tutorial.sh that
+does the steps. Feel free to follow along with the tail command
+described at the end of the tutorial.
 
+First, create the stack.
 
 ```
 SSMBAK_STACKNAME=ssmbak

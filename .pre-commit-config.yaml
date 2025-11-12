@@ -21,16 +21,18 @@ repos:
   hooks:
     - id: pylint
       name: pylint
-      entry: pylint
+      entry: bash -c 'pylint $(git ls-files "*.py")'
       language: system
       types: [python]
       require_serial: true
+      pass_filenames: false
       stages: [push]
     - id: mypy
       name: mypy
       entry: mypy
       language: system
       types: [python]
+      args: [ssmbak]
       pass_filenames: false
       stages: [push]
 - repo: https://github.com/python-poetry/poetry
