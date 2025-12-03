@@ -2,7 +2,7 @@
 
 import os
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 import boto3
 import pytest
@@ -15,7 +15,9 @@ ALT_BUCKET = "ssmbak-test-alt-region"
 ALT_PATH = "/testmultiregion"
 
 
-def simulate_backup(s3, ssm, bucket, name, value, param_type="String"):
+def simulate_backup(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    s3, ssm, bucket, name, value, param_type="String"
+):
     """Simulate what ssmbak.backup does: write to S3 with tags."""
     # Create SSM param
     ssm.put_parameter(Name=name, Value=value, Type=param_type, Overwrite=True)
@@ -71,7 +73,7 @@ def alt_region_resources():
             )
 
 
-def test_backup_restore_alt_region(alt_region_resources):
+def test_backup_restore_alt_region(alt_region_resources):  # pylint: disable=redefined-outer-name
     """Full backup/restore cycle in alternate region."""
     res = alt_region_resources
     name = f"{ALT_PATH}/{rando()}"
@@ -102,7 +104,7 @@ def test_backup_restore_alt_region(alt_region_resources):
     assert restored["Parameter"]["Value"] == value
 
 
-def test_region_isolation(alt_region_resources):
+def test_region_isolation(alt_region_resources):  # pylint: disable=redefined-outer-name
     """Data in alt region not visible from default region."""
     res = alt_region_resources
     name = f"{ALT_PATH}/{rando()}"
