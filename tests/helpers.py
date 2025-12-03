@@ -127,6 +127,9 @@ def delete_params(names):
     # deleteds have no tags, so LastModified, thus sleep
     time.sleep(1)
     deltime = datetime.now(tz=timezone.utc)
+    # Sleep again to ensure recreations happen in a later second than deltime
+    # This is required for <= semantics where exact matches are included
+    time.sleep(1)
     ## update one more
     for i, name in enumerate(names):
         what_type = "SecureString" if i % 5 == 0 else "String"

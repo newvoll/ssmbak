@@ -97,6 +97,31 @@ def test_key():
         pytest.ssm.get_parameter(Name=name, WithDecryption=True)["Parameter"]
 
 
+def test_exact_time_match():
+    """Test that backups at exact checktime are included.
+
+    This tests the edge case where restore time equals backup event time.
+    The backup event time is hardcoded in helpers.prep_message() as 2022-08-03T21:09:31.
+    This test verifies that using that exact time as checktime includes the backup.
+    """
+    name = f"{pytest.test_path}/{helpers.rando()}"
+    initial_params = helpers.create_and_check([name])
+
+    # Use the EXACT backup time (hardcoded in prep_message)
+    exact_time = helpers.str2datetime("2022-08-03T21:09:31")
+
+    key = ParamPath(name, exact_time, pytest.region, pytest.bucketname)
+    previews = key.preview()
+
+    # Should find the backup that occurred at this exact time
+    assert len(previews) == 1
+    assert previews[0]["Name"] == name
+    helpers.compare_previews_with_params(previews, initial_params)
+    assert previews[0]["Modified"] == datetime(
+        2022, 8, 3, 21, 9, 31, tzinfo=timezone.utc
+    )
+
+
 def test_tz_plus():
     """Originally for tz test, but other bits got added."""
     name = f"{pytest.test_path}/{helpers.rando()}"
