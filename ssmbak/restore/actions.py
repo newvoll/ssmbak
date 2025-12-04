@@ -31,7 +31,7 @@ from ssmbak.typing import Preview, SSMType, Version
 logger = logging.getLogger(__name__)
 
 
-def _differs(backup: Preview, current: dict | None) -> bool:
+def _differs(backup: Preview, current: Version | None) -> bool:
     """Return True if restoring backup would change current state.
 
     Args:
