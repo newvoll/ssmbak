@@ -113,6 +113,9 @@ def test_region_isolation(alt_region_resources):  # pylint: disable=redefined-ou
     # Backup in alt region
     simulate_backup(res["s3"], res["ssm"], res["bucket"], name, value)
 
+    # Modify param so preview sees a diff (diff-only filtering)
+    res["ssm"].put_parameter(Name=name, Value="changed", Type="String", Overwrite=True)
+
     # Wait for backup timestamp to be in the past (ssmbakTime comparison uses <)
     time.sleep(1)
 
