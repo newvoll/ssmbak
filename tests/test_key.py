@@ -107,6 +107,14 @@ def test_exact_time_match():
     name = f"{pytest.test_path}/{helpers.rando()}"
     initial_params = helpers.create_and_check([name])
 
+    # Modify the parameter to create a difference from the backup
+    pytest.ssm.put_parameter(
+        Name=name,
+        Value="modified-value",
+        Type=initial_params[name]["Type"],
+        Overwrite=True,
+    )
+
     # Use the EXACT backup time (hardcoded in prep_message)
     exact_time = helpers.str2datetime("2022-08-03T21:09:31")
 

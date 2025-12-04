@@ -208,3 +208,400 @@ def test_backup_create_noparam(backup_source):
     if backup_source == local_lambda:
         # this means nothing with localstack
         assert res.status_code == 200
+
+
+# Tests for preview/restore filtering to only changed parameters
+
+
+def test_preview_excludes_unchanged():
+    """Test that preview excludes parameters that haven't changed since backup."""
+    from ssmbak.restore.actions import ParamPath
+
+    name = f"{pytest.test_path}/{helpers.rando()}"
+    # Create and backup a parameter
+    message = helpers.prep_message(name, "Create", "String", description=True)
+    action = ssmbak.process_message(message)
+    initial_param = helpers.prep(action)
+    ssmbak.backup(action)
+
+    checktime = helpers.str2datetime("2023-08-31T09:48:00")
+
+    # Delete parameter from SSM, then preview should show it needs to be created
+    pytest.ssm.delete_parameter(Name=name)
+    path = ParamPath(name, checktime, pytest.region, pytest.bucketname)
+    previews = path.preview()
+    assert len(previews) == 1
+    assert previews[0]["Name"] == name
+
+    # Now set SSM to match backup state exactly
+    pytest.ssm.put_parameter(**initial_param)
+
+    # Preview again - should be empty (no changes needed)
+    path = ParamPath(name, checktime, pytest.region, pytest.bucketname)
+    previews = path.preview()
+    assert len(previews) == 0
+
+
+def test_preview_includes_value_change():
+    """Test that preview includes parameters whose value changed."""
+    from ssmbak.restore.actions import ParamPath
+
+    name = f"{pytest.test_path}/{helpers.rando()}"
+    # Create and backup a parameter
+    message = helpers.prep_message(name, "Create", "String", description=True)
+    action = ssmbak.process_message(message)
+    initial_param = helpers.prep(action)
+    ssmbak.backup(action)
+
+    checktime = helpers.str2datetime("2023-08-31T09:48:00")
+
+    # Change the value in SSM
+    pytest.ssm.put_parameter(
+        Name=name, Value="different-value", Type="String", Overwrite=True
+    )
+
+    # Preview should show the parameter (value differs)
+    path = ParamPath(name, checktime, pytest.region, pytest.bucketname)
+    previews = path.preview()
+    assert len(previews) == 1
+    assert previews[0]["Name"] == name
+    assert previews[0]["Value"] == initial_param["Value"]
+
+
+def test_preview_includes_type_change():
+    """Test that preview includes parameters whose type changed."""
+    from ssmbak.restore.actions import ParamPath
+
+    name = f"{pytest.test_path}/{helpers.rando()}"
+    # Create and backup a String parameter
+    message = helpers.prep_message(name, "Create", "String", description=False)
+    action = ssmbak.process_message(message)
+    initial_param = helpers.prep(action)
+    ssmbak.backup(action)
+
+    checktime = helpers.str2datetime("2023-08-31T09:48:00")
+
+    # Change to StringList in SSM
+    pytest.ssm.put_parameter(
+        Name=name,
+        Value=initial_param["Value"],
+        Type="StringList",
+        Overwrite=True,
+    )
+
+    # Preview should show the parameter (type differs)
+    path = ParamPath(name, checktime, pytest.region, pytest.bucketname)
+    previews = path.preview()
+    assert len(previews) == 1
+    assert previews[0]["Name"] == name
+    assert previews[0]["Type"] == "String"
+
+
+def test_preview_includes_description_change():
+    """Test that preview includes parameters whose description changed."""
+    from ssmbak.restore.actions import ParamPath
+
+    name = f"{pytest.test_path}/{helpers.rando()}"
+    # Create and backup with description
+    message = helpers.prep_message(name, "Create", "String", description=True)
+    action = ssmbak.process_message(message)
+    initial_param = helpers.prep(action)
+    ssmbak.backup(action)
+
+    checktime = helpers.str2datetime("2023-08-31T09:48:00")
+
+    # Change description in SSM
+    pytest.ssm.put_parameter(
+        Name=name,
+        Value=initial_param["Value"],
+        Type=initial_param["Type"],
+        Description="different description",
+        Overwrite=True,
+    )
+
+    # Preview should show the parameter (description differs)
+    path = ParamPath(name, checktime, pytest.region, pytest.bucketname)
+    previews = path.preview()
+    assert len(previews) == 1
+    assert previews[0]["Name"] == name
+    assert previews[0]["Description"] == "fancy description"
+
+
+def test_preview_includes_deleted_parameter():
+    """Test that preview includes parameters that were deleted since backup."""
+    from ssmbak.restore.actions import ParamPath
+
+    name = f"{pytest.test_path}/{helpers.rando()}"
+    # Create and backup a parameter
+    message = helpers.prep_message(name, "Create", "String", description=True)
+    action = ssmbak.process_message(message)
+    helpers.prep(action)
+    ssmbak.backup(action)
+
+    checktime = helpers.str2datetime("2023-08-31T09:48:00")
+
+    # Delete the parameter from SSM
+    pytest.ssm.delete_parameter(Name=name)
+
+    # Preview should show the parameter (needs to be restored)
+    path = ParamPath(name, checktime, pytest.region, pytest.bucketname)
+    previews = path.preview()
+    assert len(previews) == 1
+    assert previews[0]["Name"] == name
+
+
+def test_preview_excludes_created_parameter():
+    """Test that preview excludes parameters created after backup time."""
+    from ssmbak.restore.actions import ParamPath
+
+    name = f"{pytest.test_path}/{helpers.rando()}"
+    checktime = helpers.str2datetime("2023-08-31T09:48:00")
+
+    # Create parameter in SSM but don't back it up
+    pytest.ssm.put_parameter(
+        Name=name, Value="new-value", Type="String", Overwrite=False
+    )
+
+    # Preview should be empty (param didn't exist at checktime)
+    path = ParamPath(name, checktime, pytest.region, pytest.bucketname)
+    previews = path.preview()
+    assert len(previews) == 0
+
+
+def test_preview_excludes_deleted_at_checktime_still_deleted():
+    """Test that deleted-at-checktime, still-deleted params are excluded (no-op)."""
+    from ssmbak.restore.actions import ParamPath
+    import time
+
+    name = f"{pytest.test_path}/{helpers.rando()}"
+    # Create, backup, delete, backup delete
+    message = helpers.prep_message(name, "Create", "String", description=False)
+    action = ssmbak.process_message(message)
+    helpers.prep(action)
+    ssmbak.backup(action)
+
+    # Delete and backup the deletion
+    delete_message = helpers.prep_message(name, "Delete", "String", description=False)
+    delete_action = ssmbak.process_message(delete_message)
+    helpers.prep(delete_action)
+    ssmbak.backup(helpers.update_time(delete_action))
+
+    time.sleep(1)
+    checktime = datetime.now(tz=timezone.utc)
+    time.sleep(1)
+
+    # Ensure parameter doesn't exist in SSM
+    try:
+        pytest.ssm.delete_parameter(Name=name)
+    except ClientError:
+        pass  # Already deleted
+
+    # Preview should be empty (deleted then, still deleted now = no-op)
+    path = ParamPath(name, checktime, pytest.region, pytest.bucketname)
+    previews = path.preview()
+    assert len(previews) == 0
+
+
+def test_preview_includes_deleted_at_checktime_recreated():
+    """Test that deleted-at-checktime but now-exists params are included."""
+    from ssmbak.restore.actions import ParamPath
+    import time
+
+    name = f"{pytest.test_path}/{helpers.rando()}"
+    # Create, backup, delete, backup delete
+    message = helpers.prep_message(name, "Create", "String", description=False)
+    action = ssmbak.process_message(message)
+    helpers.prep(action)
+    ssmbak.backup(action)
+
+    # Delete and backup the deletion
+    delete_message = helpers.prep_message(name, "Delete", "String", description=False)
+    delete_action = ssmbak.process_message(delete_message)
+    helpers.prep(delete_action)
+    ssmbak.backup(helpers.update_time(delete_action))
+
+    time.sleep(1)
+    checktime = datetime.now(tz=timezone.utc)
+    time.sleep(1)
+
+    # Recreate parameter in SSM
+    pytest.ssm.put_parameter(
+        Name=name, Value="recreated-value", Type="String", Overwrite=True
+    )
+
+    # Preview should show deletion (was deleted at checktime, exists now)
+    path = ParamPath(name, checktime, pytest.region, pytest.bucketname)
+    previews = path.preview()
+    assert len(previews) == 1
+    assert previews[0]["Name"] == name
+    assert previews[0].get("Deleted") is True
+
+
+def test_preview_mixed_batch():
+    """Test recursive path with mix of changed and unchanged parameters."""
+    from ssmbak.restore.actions import ParamPath
+
+    # Create multiple parameters with different states
+    names = [f"{pytest.test_path}/{helpers.rando()}" for _ in range(5)]
+    params = {}
+
+    # Create and backup all
+    for i, name in enumerate(names):
+        message = helpers.prep_message(name, "Create", "String", description=True)
+        action = ssmbak.process_message(message)
+        param = helpers.prep(action)
+        params[name] = param
+        ssmbak.backup(action)
+
+    checktime = helpers.str2datetime("2023-08-31T09:48:00")
+
+    # names[0]: unchanged
+    # names[1]: value changed
+    # names[2]: type changed
+    # names[3]: description changed
+    # names[4]: deleted
+
+    # Keep names[0] unchanged
+    pytest.ssm.put_parameter(**params[names[0]])
+
+    # Change value on names[1]
+    pytest.ssm.put_parameter(
+        Name=names[1],
+        Value="different-value",
+        Type=params[names[1]]["Type"],
+        Description=params[names[1]]["Description"],
+        Overwrite=True,
+    )
+
+    # Change type on names[2]
+    pytest.ssm.put_parameter(
+        Name=names[2],
+        Value=params[names[2]]["Value"],
+        Type="StringList",
+        Overwrite=True,
+    )
+
+    # Change description on names[3]
+    pytest.ssm.put_parameter(
+        Name=names[3],
+        Value=params[names[3]]["Value"],
+        Type=params[names[3]]["Type"],
+        Description="new description",
+        Overwrite=True,
+    )
+
+    # Delete names[4]
+    pytest.ssm.delete_parameter(Name=names[4])
+
+    # Preview should only show the 4 changed parameters
+    path = ParamPath(
+        f"{pytest.test_path}/", checktime, pytest.region, pytest.bucketname, recurse=True
+    )
+    previews = path.preview()
+    preview_names = [p["Name"] for p in previews]
+
+    assert len(previews) == 4
+    assert names[0] not in preview_names  # unchanged
+    assert names[1] in preview_names  # value changed
+    assert names[2] in preview_names  # type changed
+    assert names[3] in preview_names  # description changed
+    assert names[4] in preview_names  # deleted
+
+
+def test_preview_securestring_comparison():
+    """Test that SecureString values are compared correctly."""
+    from ssmbak.restore.actions import ParamPath
+
+    name = f"{pytest.test_path}/{helpers.rando()}"
+    # Create and backup a SecureString parameter
+    message = helpers.prep_message(name, "Create", "SecureString", description=True)
+    action = ssmbak.process_message(message)
+    initial_param = helpers.prep(action)
+    ssmbak.backup(action)
+
+    checktime = helpers.str2datetime("2023-08-31T09:48:00")
+
+    # Set SSM to match backup (unchanged)
+    pytest.ssm.put_parameter(**initial_param)
+
+    # Preview should be empty (no changes)
+    path = ParamPath(name, checktime, pytest.region, pytest.bucketname)
+    previews = path.preview()
+    assert len(previews) == 0
+
+    # Change the value
+    pytest.ssm.put_parameter(
+        Name=name,
+        Value="different-secure-value",
+        Type="SecureString",
+        Overwrite=True,
+    )
+
+    # Preview should now show it
+    path = ParamPath(name, checktime, pytest.region, pytest.bucketname)
+    previews = path.preview()
+    assert len(previews) == 1
+    assert previews[0]["Name"] == name
+
+
+def test_restore_skips_unchanged():
+    """Test that restore skips unchanged parameters."""
+    from ssmbak.restore.actions import ParamPath
+
+    name = f"{pytest.test_path}/{helpers.rando()}"
+    # Create and backup a parameter
+    message = helpers.prep_message(name, "Create", "String", description=True)
+    action = ssmbak.process_message(message)
+    initial_param = helpers.prep(action)
+    ssmbak.backup(action)
+
+    checktime = helpers.str2datetime("2023-08-31T09:48:00")
+
+    # Set SSM to match backup state exactly
+    pytest.ssm.put_parameter(**initial_param)
+
+    # Get version before restore
+    param_before = pytest.ssm.get_parameter(Name=name, WithDecryption=True)["Parameter"]
+    version_before = param_before["Version"]
+
+    # Restore should return empty list (no changes)
+    path = ParamPath(name, checktime, pytest.region, pytest.bucketname)
+    restored = path.restore()
+    assert len(restored) == 0
+
+    # Verify SSM version didn't change (parameter wasn't touched)
+    param_after = pytest.ssm.get_parameter(Name=name, WithDecryption=True)["Parameter"]
+    version_after = param_after["Version"]
+    assert version_before == version_after
+
+
+def test_restore_applies_changes():
+    """Test that restore applies actual changes."""
+    from ssmbak.restore.actions import ParamPath
+
+    name = f"{pytest.test_path}/{helpers.rando()}"
+    # Create and backup a parameter
+    message = helpers.prep_message(name, "Create", "String", description=True)
+    action = ssmbak.process_message(message)
+    initial_param = helpers.prep(action)
+    ssmbak.backup(action)
+
+    checktime = helpers.str2datetime("2023-08-31T09:48:00")
+
+    # Change the value in SSM
+    pytest.ssm.put_parameter(
+        Name=name,
+        Value="changed-value",
+        Type=initial_param["Type"],
+        Description=initial_param["Description"],
+        Overwrite=True,
+    )
+
+    # Restore should apply changes
+    path = ParamPath(name, checktime, pytest.region, pytest.bucketname)
+    restored = path.restore()
+    assert len(restored) == 1
+
+    # Verify SSM was restored to original value
+    param = pytest.ssm.get_parameter(Name=name, WithDecryption=True)["Parameter"]
+    assert param["Value"] == initial_param["Value"]

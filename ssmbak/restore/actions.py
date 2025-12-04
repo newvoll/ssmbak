@@ -31,6 +31,31 @@ from ssmbak.typing import Preview, SSMType, Version
 logger = logging.getLogger(__name__)
 
 
+def _differs(backup: Preview, current: dict | None) -> bool:
+    """Return True if restoring backup would change current state.
+
+    Args:
+        backup: Preview dict from backup state at checktime
+        current: Current SSM parameter state (from _ssmgetpath), or None if doesn't exist
+
+    Returns:
+        True if restore would change state, False if no-op
+    """
+    if current is None:
+        # Parameter doesn't exist now
+        # Only restore if backup shows it existed (not deleted)
+        return not backup.get("Deleted", False)
+    if backup.get("Deleted", False):
+        # Backup shows deleted, but param exists now -> need to delete
+        return True
+    # Both exist, compare values
+    return (
+        backup.get("Value") != current.get("Value")
+        or backup.get("Type") != current.get("Type")
+        or backup.get("Description", "") != current.get("Description", "")
+    )
+
+
 class ParamPath(Resource):
     """An s3/ssm key or a path to restore to a point in time.
 
@@ -145,6 +170,8 @@ class ParamPath(Resource):
     def preview(self) -> list[Preview]:
         """Shows what would be restored.
 
+        Only returns parameters that differ from current SSM state.
+
         Returns:
           A list of dicts, one for each ssm/s3 key, with concise
           information about the latest versions to be restored
@@ -165,7 +192,18 @@ class ParamPath(Resource):
 
         names = self.get_names()
         previews = [self.preview_key(name) for name in names]
-        return sorted(previews, key=lambda d: d["Name"])
+
+        # Fetch current SSM state to filter out unchanged parameters
+        current_state = self._ssmgetpath(self.name, recurse=self.recurse)
+
+        # Filter to only parameters that would actually change
+        filtered = []
+        for preview in previews:
+            current = current_state.get(preview["Name"])
+            if _differs(preview, current):
+                filtered.append(preview)
+
+        return sorted(filtered, key=lambda d: d["Name"])
 
     def restore(self) -> list[Preview]:
         """Restore parameters to their state at time,

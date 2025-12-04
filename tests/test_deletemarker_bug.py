@@ -81,6 +81,11 @@ def test_recreated_parameter_after_delete(backup_source):
     t3 = datetime.now(tz=timezone.utc)
     logger.info("T3 (after recreate): %s", t3)
 
+    # Modify SSM to differ from all three backup states to ensure preview includes them
+    pytest.ssm.put_parameter(
+        Name=name, Value="current-modified", Type="String", Overwrite=True
+    )
+
     # Test 1: Query BEFORE deletion - should see "initial" value
     logger.info("Test 1: Querying at T1 (before deletion)")
     key1 = ParamPath(name, t1, pytest.region, pytest.bucketname)

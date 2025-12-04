@@ -195,6 +195,7 @@ class Resource:
                   ),
                   "ARN": "arn:aws:ssm:us-west-2:000000000000:parameter/testyssmbak/82P11M",
                   "DataType": "text",
+                  "Description": "optional description",
               },
           }
         """
@@ -212,12 +213,35 @@ class Resource:
                     "Parameter"
                 ]
                 params = [param]
-            except KeyError:  # nothing found
+            except (KeyError, ClientError):  # nothing found
                 params = []
         else:
             params = []
         for name in {x["Name"] for x in params}:
             keyed_params[name] = [x for x in params if x["Name"] == name][0]
+
+        # Fetch descriptions for all parameters
+        # get_parameters_by_path doesn't include Description, need describe_parameters
+        if keyed_params:
+            names = list(keyed_params.keys())
+            # describe_parameters can handle up to 50 parameters at once
+            batch_size = 50
+            for i in range(0, len(names), batch_size):
+                batch = names[i:i + batch_size]
+                try:
+                    described = self.ssm.describe_parameters(
+                        ParameterFilters=[
+                            {"Key": "Name", "Values": batch}
+                        ]
+                    )["Parameters"]
+                    for desc in described:
+                        param_name = desc["Name"]
+                        if "Description" in desc:
+                            keyed_params[param_name]["Description"] = desc["Description"]
+                except ClientError:
+                    # If describe fails, continue without descriptions
+                    pass
+
         return keyed_params
 
     def _get_object_versions(self, key: str) -> botocore.paginate.PageIterator:
