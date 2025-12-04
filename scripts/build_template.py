@@ -14,6 +14,7 @@ import re
 import sys
 from pathlib import Path
 
+import boto3
 import yaml
 
 # Repo root for finding files
@@ -103,8 +104,6 @@ def build_template(template_path: Path, lambda_path: Path) -> str:
 
 def upload_to_s3(local_path: Path, s3_key: str, profile: str | None = None) -> str:
     """Upload file to S3 bucket."""
-    import boto3
-
     session = boto3.Session(profile_name=profile) if profile else boto3.Session()
     s3 = session.client("s3", region_name=BUCKET_REGION)
     s3.upload_file(
@@ -117,6 +116,7 @@ def upload_to_s3(local_path: Path, s3_key: str, profile: str | None = None) -> s
 
 
 def main():
+    """CLI entry point for building and optionally uploading templates."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--upload",
