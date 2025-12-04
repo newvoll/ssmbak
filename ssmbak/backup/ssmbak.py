@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import re
 import sys
 import urllib.parse
 from datetime import datetime, timezone
@@ -14,6 +15,16 @@ from botocore.exceptions import ClientError
 LEVEL = os.getenv("LOGLEVEL", "INFO")
 logger = logging.getLogger(__name__)
 logger.setLevel(getattr(logging, LEVEL))
+
+
+def _sanitize_tag_value(value: str) -> str:
+    """Remove characters not allowed in S3 tag values.
+
+    S3 allows: letters, numbers, spaces, and + - = . _ : / @
+    Also truncates to 256 chars (S3 tag value limit).
+    """
+    sanitized = re.sub(r'[^a-zA-Z0-9 +\-=._:/@]', '', value)
+    return sanitized[:256]
 
 
 def process_message(body: str) -> dict[str, Union[str, datetime]]:
@@ -96,7 +107,7 @@ def backup(action: dict) -> int:
             "ssmbakType": action["type"],
         }
         if "description" in action:
-            tags["ssmbakDescription"] = action["description"]
+            tags["ssmbakDescription"] = _sanitize_tag_value(action["description"])
         kwargs["Tagging"] = urllib.parse.urlencode(tags)
         logger.debug("kwargs[Tagging]: %s", kwargs["Tagging"])
         kwargs["Body"] = value

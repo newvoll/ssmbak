@@ -55,6 +55,23 @@ def get_tagset(key):
     return nice_tagset
 
 
+def test_sanitize_tag_value():
+    """Test _sanitize_tag_value sanitizes and truncates tag values for S3."""
+    # Test that parentheses are stripped
+    result = ssmbak._sanitize_tag_value("ssmbak bucket (auto-discovered)")  # pylint: disable=protected-access
+    assert result == "ssmbak bucket auto-discovered"
+
+    # Test that allowed special chars are preserved
+    result = ssmbak._sanitize_tag_value("test + value = good_result")  # pylint: disable=protected-access
+    assert result == "test + value = good_result"
+
+    # Test truncation to 256 chars
+    long_string = "a" * 300
+    result = ssmbak._sanitize_tag_value(long_string)  # pylint: disable=protected-access
+    assert len(result) == 256
+    assert result == "a" * 256
+
+
 def test_process_message():
     """Unit test process_message used by everything."""
     testo = slurp_helper("create")
