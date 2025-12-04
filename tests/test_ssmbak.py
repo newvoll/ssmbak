@@ -2,6 +2,7 @@
 
 import json
 import logging
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -9,6 +10,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from ssmbak.backup import ssmbak
+from ssmbak.restore.actions import ParamPath
 
 # pytype bug https://google.github.io/pytype/errors.html#pyi-error
 from tests import helpers, local_lambda
@@ -215,8 +217,6 @@ def test_backup_create_noparam(backup_source):
 
 def test_preview_excludes_unchanged():
     """Test that preview excludes parameters that haven't changed since backup."""
-    from ssmbak.restore.actions import ParamPath
-
     name = f"{pytest.test_path}/{helpers.rando()}"
     # Create and backup a parameter
     message = helpers.prep_message(name, "Create", "String", description=True)
@@ -244,8 +244,6 @@ def test_preview_excludes_unchanged():
 
 def test_preview_includes_value_change():
     """Test that preview includes parameters whose value changed."""
-    from ssmbak.restore.actions import ParamPath
-
     name = f"{pytest.test_path}/{helpers.rando()}"
     # Create and backup a parameter
     message = helpers.prep_message(name, "Create", "String", description=True)
@@ -270,8 +268,6 @@ def test_preview_includes_value_change():
 
 def test_preview_includes_type_change():
     """Test that preview includes parameters whose type changed."""
-    from ssmbak.restore.actions import ParamPath
-
     name = f"{pytest.test_path}/{helpers.rando()}"
     # Create and backup a String parameter
     message = helpers.prep_message(name, "Create", "String", description=False)
@@ -299,8 +295,6 @@ def test_preview_includes_type_change():
 
 def test_preview_includes_description_change():
     """Test that preview includes parameters whose description changed."""
-    from ssmbak.restore.actions import ParamPath
-
     name = f"{pytest.test_path}/{helpers.rando()}"
     # Create and backup with description
     message = helpers.prep_message(name, "Create", "String", description=True)
@@ -329,8 +323,6 @@ def test_preview_includes_description_change():
 
 def test_preview_includes_deleted_parameter():
     """Test that preview includes parameters that were deleted since backup."""
-    from ssmbak.restore.actions import ParamPath
-
     name = f"{pytest.test_path}/{helpers.rando()}"
     # Create and backup a parameter
     message = helpers.prep_message(name, "Create", "String", description=True)
@@ -352,8 +344,6 @@ def test_preview_includes_deleted_parameter():
 
 def test_preview_excludes_created_parameter():
     """Test that preview excludes parameters created after backup time."""
-    from ssmbak.restore.actions import ParamPath
-
     name = f"{pytest.test_path}/{helpers.rando()}"
     checktime = helpers.str2datetime("2023-08-31T09:48:00")
 
@@ -370,9 +360,6 @@ def test_preview_excludes_created_parameter():
 
 def test_preview_excludes_deleted_at_checktime_still_deleted():
     """Test that deleted-at-checktime, still-deleted params are excluded (no-op)."""
-    from ssmbak.restore.actions import ParamPath
-    import time
-
     name = f"{pytest.test_path}/{helpers.rando()}"
     # Create, backup, delete, backup delete
     message = helpers.prep_message(name, "Create", "String", description=False)
@@ -404,9 +391,6 @@ def test_preview_excludes_deleted_at_checktime_still_deleted():
 
 def test_preview_includes_deleted_at_checktime_recreated():
     """Test that deleted-at-checktime but now-exists params are included."""
-    from ssmbak.restore.actions import ParamPath
-    import time
-
     name = f"{pytest.test_path}/{helpers.rando()}"
     # Create, backup, delete, backup delete
     message = helpers.prep_message(name, "Create", "String", description=False)
@@ -439,14 +423,12 @@ def test_preview_includes_deleted_at_checktime_recreated():
 
 def test_preview_mixed_batch():
     """Test recursive path with mix of changed and unchanged parameters."""
-    from ssmbak.restore.actions import ParamPath
-
     # Create multiple parameters with different states
     names = [f"{pytest.test_path}/{helpers.rando()}" for _ in range(5)]
     params = {}
 
     # Create and backup all
-    for i, name in enumerate(names):
+    for name in names:
         message = helpers.prep_message(name, "Create", "String", description=True)
         action = ssmbak.process_message(message)
         param = helpers.prep(action)
@@ -510,8 +492,6 @@ def test_preview_mixed_batch():
 
 def test_preview_securestring_comparison():
     """Test that SecureString values are compared correctly."""
-    from ssmbak.restore.actions import ParamPath
-
     name = f"{pytest.test_path}/{helpers.rando()}"
     # Create and backup a SecureString parameter
     message = helpers.prep_message(name, "Create", "SecureString", description=True)
@@ -546,8 +526,6 @@ def test_preview_securestring_comparison():
 
 def test_restore_skips_unchanged():
     """Test that restore skips unchanged parameters."""
-    from ssmbak.restore.actions import ParamPath
-
     name = f"{pytest.test_path}/{helpers.rando()}"
     # Create and backup a parameter
     message = helpers.prep_message(name, "Create", "String", description=True)
@@ -577,8 +555,6 @@ def test_restore_skips_unchanged():
 
 def test_restore_applies_changes():
     """Test that restore applies actual changes."""
-    from ssmbak.restore.actions import ParamPath
-
     name = f"{pytest.test_path}/{helpers.rando()}"
     # Create and backup a parameter
     message = helpers.prep_message(name, "Create", "String", description=True)
