@@ -5,80 +5,10 @@ import os
 import re
 import sys
 import time
-from pathlib import Path
 
 import boto3
-import yaml
 
 logger = logging.getLogger(__name__)
-
-
-# CloudFormation intrinsic function support for YAML load/dump
-def _cfn_constructor(loader, tag_suffix, node):
-    """Handle CloudFormation intrinsic functions like !Ref, !GetAtt, !Sub."""
-    if isinstance(node, yaml.ScalarNode):
-        return {tag_suffix: loader.construct_scalar(node)}
-    if isinstance(node, yaml.SequenceNode):
-        return {tag_suffix: loader.construct_sequence(node)}
-    if isinstance(node, yaml.MappingNode):
-        return {tag_suffix: loader.construct_mapping(node)}
-    return {tag_suffix: node.value}
-
-
-yaml.SafeLoader.add_multi_constructor("!", _cfn_constructor)
-
-
-def _cfn_representer(dumper, data):
-    """Represent CloudFormation intrinsic functions with ! tag syntax.
-
-    Handles CloudFormation intrinsic functions. Our constructor creates dicts like
-    {"GetAtt": "Q.Arn"} from !GetAtt tags. We convert them back to ! syntax.
-
-    Uses explicit list of CloudFormation intrinsic function names to avoid false
-    positives on regular properties like "ZipFile" or "Code".
-    """
-    if isinstance(data, dict) and len(data) == 1:
-        key = next(iter(data))
-
-        # CloudFormation intrinsic function names (what appears after ! in YAML)
-        # This list is stable - AWS rarely adds new intrinsic functions
-        cfn_functions = {
-            "Ref",
-            "Condition",
-            "GetAtt",
-            "Sub",
-            "Join",
-            "Select",
-            "Split",
-            "FindInMap",
-            "GetAZs",
-            "ImportValue",
-            "Base64",
-            "Cidr",
-            "If",
-            "And",
-            "Or",
-            "Not",
-            "Equals",
-        }
-
-        if key in cfn_functions:
-            value = data[key]
-            if isinstance(value, str):
-                return dumper.represent_scalar(f"!{key}", value)
-            if isinstance(value, list):
-                return dumper.represent_sequence(f"!{key}", value)
-            if isinstance(value, dict):
-                return dumper.represent_mapping(f"!{key}", value)
-    return dumper.represent_dict(data)
-
-
-# Custom dumper that handles CloudFormation tags
-class CfnDumper(yaml.SafeDumper):
-    """YAML dumper with CloudFormation intrinsic function support."""
-
-
-CfnDumper.add_representer(dict, _cfn_representer)
 
 
 class Stack:
@@ -145,38 +75,24 @@ class Stack:
                 result.append(res)
         return result
 
-    def _kwargify_params(self, params, template_file):
-        parameters = [
-            {"ParameterKey": name, "ParameterValue": value}
-            for name, value in params.items()
-        ]
-
-        with open(template_file, encoding="utf-8") as f:
-            template = yaml.safe_load(f)
-        template["Resources"]["Function"]["Properties"]["Code"]["ZipFile"] = Path(
-            f"{Path(__file__).parent.parent}/backup/ssmbak.py"
-        ).read_text(encoding="utf-8")
-        template_body = yaml.dump(template, Dumper=CfnDumper, default_flow_style=False)
+    def create(self, template_url):
+        """Creates the stack."""
+        logger.debug("template_url = %s", template_url)
         kwargs = {
             "StackName": self.name,
-            "Parameters": parameters,
             "Capabilities": ["CAPABILITY_NAMED_IAM"],
-            "TemplateBody": template_body,
+            "TemplateURL": template_url,
         }
-        return kwargs
-
-    def create(self, template_file, params):
-        """Creates the stack."""
-        logger.debug("params = %s", params)
-        kwargs = self._kwargify_params(params, template_file)
-        logger.debug(kwargs)
         self.cfn.create_stack(**kwargs)
 
-    def update(self, template_file, params):
-        """Creates the stack."""
-        logger.debug("params = %s", params)
-        kwargs = self._kwargify_params(params, template_file)
-        logger.debug(kwargs)
+    def update(self, template_url):
+        """Updates the stack."""
+        logger.debug("template_url = %s", template_url)
+        kwargs = {
+            "StackName": self.name,
+            "Capabilities": ["CAPABILITY_NAMED_IAM"],
+            "TemplateURL": template_url,
+        }
         self.cfn.update_stack(**kwargs)
 
     def events(self, last=None):

@@ -7,12 +7,14 @@ import logging
 import pprint
 import sys
 from importlib.metadata import version
-from pathlib import Path
 
 from botocore.exceptions import ClientError, NoRegionError, ParamValidationError
 
 from ssmbak.cli import helpers
 from ssmbak.cli.cfn import Stack
+
+TEMPLATE_BUCKET = "ssmbak-public"
+TEMPLATE_REGION = "us-east-2"
 
 logger = logging.getLogger(__name__)
 pp = pprint.PrettyPrinter(indent=4)
@@ -78,9 +80,9 @@ def main():
 def _do_cfn(region):
     stack = Stack(args.stackname, region)
     if args.command in ["create", "update"]:
-        template_dir = Path(__file__).parent.parent
-        template_file = f"{template_dir}/data/cfn.yml"
-        getattr(stack, args.command)(template_file, {"Version": version("ssmbak")})
+        ver = version("ssmbak")
+        template_url = f"https://{TEMPLATE_BUCKET}.s3.{TEMPLATE_REGION}.amazonaws.com/cfn-{ver}.yml"
+        getattr(stack, args.command)(template_url)
         yay = stack.watch()
         if yay and args.command == "create":
             print()
