@@ -3,9 +3,6 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: all ssmbak resources to back up ssm events to s3
 
 Parameters:
-  Version:
-    Type: String
-
   LogLevel:
     Type: String
     Default: INFO
