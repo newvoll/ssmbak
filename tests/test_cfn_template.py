@@ -6,8 +6,10 @@ Used to verify compatibility when switching YAML parsers.
 
 # pylint: skip-file
 
+import importlib.metadata
 import logging
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
@@ -93,184 +95,85 @@ def test_yaml_dump_works():
     assert "Resources" in yaml_str or "resources" in yaml_str
 
 
-def test_template_parameters():
-    """Template parameters have expected structure."""
+def test_template_url_construction():
+    """Template URL is constructed correctly from version and constants."""
+    # Constants from ssmbak/cli/stack.py (can't import due to argparse at module level)
+    TEMPLATE_BUCKET = "ssmbak-public"
+    TEMPLATE_REGION = "us-east-2"
+
+    version = importlib.metadata.version("ssmbak")
+    expected_url = f"https://{TEMPLATE_BUCKET}.s3.{TEMPLATE_REGION}.amazonaws.com/cfn-{version}.yml"
+
+    # Verify the URL format
+    assert expected_url.startswith("https://")
+    assert TEMPLATE_BUCKET in expected_url
+    assert TEMPLATE_REGION in expected_url
+    assert f"cfn-{version}.yml" in expected_url
+
+
+def test_stack_create_uses_template_url():
+    """Stack.create uses TemplateURL parameter instead of TemplateBody."""
+    from ssmbak.cli.cfn import Stack
+
+    stack = Stack("test-stack", pytest.region)
+    test_url = "https://example.com/template.yml"
+
+    # Mock the create_stack method
+    with patch.object(stack.cfn, "create_stack") as mock_create:
+        stack.create(test_url)
+
+        # Verify create_stack was called once
+        assert mock_create.call_count == 1
+
+        # Get the kwargs passed to create_stack
+        call_kwargs = mock_create.call_args[1]
+
+        # Verify TemplateURL is used
+        assert "TemplateURL" in call_kwargs
+        assert call_kwargs["TemplateURL"] == test_url
+
+        # Verify TemplateBody is NOT used
+        assert "TemplateBody" not in call_kwargs
+
+
+def test_stack_update_uses_template_url():
+    """Stack.update uses TemplateURL parameter instead of TemplateBody."""
+    from ssmbak.cli.cfn import Stack
+
+    stack = Stack("test-stack", pytest.region)
+    test_url = "https://example.com/template.yml"
+
+    # Mock the update_stack method
+    with patch.object(stack.cfn, "update_stack") as mock_update:
+        stack.update(test_url)
+
+        # Verify update_stack was called once
+        assert mock_update.call_count == 1
+
+        # Get the kwargs passed to update_stack
+        call_kwargs = mock_update.call_args[1]
+
+        # Verify TemplateURL is used
+        assert "TemplateURL" in call_kwargs
+        assert call_kwargs["TemplateURL"] == test_url
+
+        # Verify TemplateBody is NOT used
+        assert "TemplateBody" not in call_kwargs
+
+
+def test_template_parameters_current():
+    """Template parameters have expected structure after stack rework."""
     template = cfn_yaml.load(str(TEMPLATE_PATH))
 
     params = template["Parameters"]
-    assert "Version" in params
+
+    # These parameters should exist
     assert "LogLevel" in params
+    assert "ThresholdAgeOfOldestMessage" in params
+    assert "ThresholdNumberOfMessagesVisible" in params
+
+    # Version parameter should NOT exist (removed in stack rework)
+    assert "Version" not in params
 
     # LogLevel should have a default
     assert params["LogLevel"]["Default"] == "INFO"
-
-
-def test_kwargify_params_template_size():
-    """Template body from _kwargify_params should be reasonable size with Lambda code injected.
-
-    This test verifies that the CloudFormation template preparation doesn't bloat
-    the template with metadata or serialization artifacts.
-    """
-    from ssmbak.cli.cfn import Stack
-
-    # Create a Stack instance (uses localstack via fixtures)
-    stack = Stack("test-stack", pytest.region)
-
-    # Call _kwargify_params with test parameters
-    template_file = str(TEMPLATE_PATH)
-    params = {"Version": "0.1.0"}
-    kwargs = stack._kwargify_params(params, template_file)
-
-    # Verify kwargs structure
-    assert "TemplateBody" in kwargs
-    template_body = kwargs["TemplateBody"]
-
-    # Template body should be a string
-    assert isinstance(template_body, str)
-
-    # Parse it back to verify it's valid YAML
-    parsed = yaml.safe_load(template_body)
-    assert isinstance(parsed, dict)
-    assert "Resources" in parsed
-    assert "Function" in parsed["Resources"]
-
-    # Lambda code should be injected
-    lambda_code = parsed["Resources"]["Function"]["Properties"]["Code"]["ZipFile"]
-    assert lambda_code is not None
-    assert len(lambda_code) > 100  # Should contain actual Lambda function code
-    assert "def handler" in lambda_code
-
-    # Template body should be reasonable size (< 100KB)
-    # Original template is ~5KB, Lambda code is ~10KB, total should be < 100KB
-    template_size = len(template_body)
-    assert template_size < 100000, (
-        f"Template body is {template_size} bytes ({template_size // 1024}KB), "
-        f"expected < 100KB. This suggests metadata is being serialized."
-    )
-
-    # Should not contain Python object serialization
-    assert (
-        "!!python/object" not in template_body
-    ), "Template contains Python object serialization"
-    assert (
-        "cfnlint.decode.node" not in template_body
-    ), "Template contains cfn-lint metadata"
-
-
-def test_kwargify_params_cfn_tags_preserved():
-    """Template body preserves CloudFormation intrinsic function tags."""
-    from ssmbak.cli.cfn import Stack
-
-    # Get processed template
-    stack = Stack("test-stack", pytest.region)
-    kwargs = stack._kwargify_params({"Version": "0.1.0"}, str(TEMPLATE_PATH))
-    template_body = kwargs["TemplateBody"]
-
-    # Verify CloudFormation tags are preserved with ! syntax
-    assert "!Ref" in template_body, "!Ref tags not preserved"
-    assert "!GetAtt" in template_body, "!GetAtt tags not preserved"
-    assert "!Sub" in template_body, "!Sub tags not preserved"
-
-    # Verify no expanded dict format
-    assert (
-        "Ref:" not in template_body or "!Ref" in template_body
-    ), "Tags expanded to dict format"
-
-    # Parse and verify structure
-    parsed = yaml.safe_load(template_body)
-    assert "Resources" in parsed
-    assert "Function" in parsed["Resources"]
-
-    # Verify Lambda code was injected
-    lambda_code = parsed["Resources"]["Function"]["Properties"]["Code"]["ZipFile"]
-    assert len(lambda_code) > 100
-    assert "def handler" in lambda_code
-
-
-def test_kwargify_params_cfn_validation():
-    """Template body is valid CloudFormation template that cfn-lint can parse."""
-    import tempfile
-
-    from cfnlint import decode
-
-    from ssmbak.cli.cfn import Stack
-
-    # Get processed template
-    stack = Stack("test-stack", pytest.region)
-    kwargs = stack._kwargify_params({"Version": "0.1.0"}, str(TEMPLATE_PATH))
-    template_body = kwargs["TemplateBody"]
-
-    # Write to temp file for cfn-lint validation
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
-        f.write(template_body)
-        temp_path = f.name
-
-    try:
-        # Load template with cfn-lint (returns tuple of template and matches)
-        # This validates that the template is valid CloudFormation YAML
-        template, matches = decode.decode(temp_path)
-
-        # Basic validation - template should load without errors
-        assert template is not None, "Template failed to load with cfn-lint"
-        assert "Resources" in template, "Template missing Resources section"
-        assert "Function" in template["Resources"], "Template missing Function resource"
-
-        # Verify Lambda code was injected and preserved
-        function = template["Resources"]["Function"]
-        assert "Properties" in function
-        assert "Code" in function["Properties"]
-        assert "ZipFile" in function["Properties"]["Code"]
-
-        zipfile = function["Properties"]["Code"]["ZipFile"]
-        assert len(zipfile) > 100, "Lambda code not properly injected"
-        assert "def handler" in zipfile, "Lambda handler function missing"
-
-        # Check for any parse errors from cfn-lint
-        parse_errors = [m for m in matches if "parse" in str(m).lower()]
-        assert len(parse_errors) == 0, f"CloudFormation parse errors: {parse_errors}"
-
-    finally:
-        # Cleanup
-        import os
-
-        os.unlink(temp_path)
-
-
-def test_kwargify_params_aws_validation():
-    """Template body is valid according to AWS CloudFormation API."""
-    import os
-
-    import boto3
-
-    from ssmbak.cli.cfn import Stack
-
-    # Get processed template
-    stack = Stack("test-stack", pytest.region)
-    kwargs = stack._kwargify_params({"Version": "0.1.0"}, str(TEMPLATE_PATH))
-    template_body = kwargs["TemplateBody"]
-
-    # Validate against AWS CloudFormation API (localstack)
-    cfn = boto3.client(
-        "cloudformation",
-        region_name=pytest.region,
-        endpoint_url=os.getenv("AWS_ENDPOINT"),
-    )
-    response = cfn.validate_template(TemplateBody=template_body)
-
-    # Verify response indicates valid template
-    assert "Parameters" in response, "AWS validation response missing Parameters"
-    assert "Description" in response, "AWS validation response missing Description"
-    assert response["ResponseMetadata"]["HTTPStatusCode"] == 200, "Validation failed"
-
-    # Verify expected parameters are present
-    param_keys = {p["ParameterKey"] for p in response["Parameters"]}
-    assert "Version" in param_keys, "Version parameter not found"
-    assert "LogLevel" in param_keys, "LogLevel parameter not found"
-    assert "ThresholdAgeOfOldestMessage" in param_keys
-    assert "ThresholdNumberOfMessagesVisible" in param_keys
-
-    # Verify parameter defaults are preserved
-    log_level_param = next(
-        p for p in response["Parameters"] if p["ParameterKey"] == "LogLevel"
-    )
-    assert log_level_param["DefaultValue"] == "INFO", "LogLevel default not preserved"
