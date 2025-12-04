@@ -82,6 +82,7 @@ class Stack:
             "StackName": self.name,
             "Capabilities": ["CAPABILITY_NAMED_IAM"],
             "TemplateURL": template_url,
+            "Tags": [{"Key": "ssmbak:managed", "Value": "true"}],
         }
         self.cfn.create_stack(**kwargs)
 
@@ -92,6 +93,7 @@ class Stack:
             "StackName": self.name,
             "Capabilities": ["CAPABILITY_NAMED_IAM"],
             "TemplateURL": template_url,
+            "Tags": [{"Key": "ssmbak:managed", "Value": "true"}],
         }
         self.cfn.update_stack(**kwargs)
 
