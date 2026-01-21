@@ -345,7 +345,7 @@ class Resource:
         return all_versions
 
     def _get_versions(
-        self, key: str, checktime: datetime, recurse: bool = False
+        self, key: str, checktime: datetime, recurse: bool = False, use_tags: bool = True
     ) -> dict[str, Version]:
         """Efficiently looks for the version most recently backed-up before checktime.
 
@@ -360,6 +360,9 @@ class Resource:
           key: a single s3 key or path
           checktime: the point in time for which to retrieve relative latest version
           recurse: operate on all paths/keys under key/
+          use_tags: if True (default), fetch ssmbakTime tags for precise event time;
+                    if False, skip tag fetching and use LastModified directly (faster,
+                    suitable for non-SSM backups like CFN templates)
 
         Returns:
           The same keyed versions as everywhere.
@@ -399,9 +402,15 @@ class Resource:
         for version in all_versions:
             param_key = version["Key"]
 
-            # Fetch tags and check time
-            version["tagset"] = self._get_tagset(param_key, version["VersionId"])
-            tagtime = self._tagtime(version)
+            # Fetch tags and check time (or use LastModified directly if use_tags=False)
+            if use_tags:
+                version["tagset"] = self._get_tagset(param_key, version["VersionId"])
+                tagtime = self._tagtime(version)
+            else:
+                # Skip tag fetching - use LastModified directly as event time
+                version["tagset"] = {}
+                tagtime = version["LastModified"]
+
             # ssmbakTime is truncated to seconds (losing microseconds) when stored
             # So compare at second-level precision to be fair
             # Use <= to mean "event happened at or before this second"
