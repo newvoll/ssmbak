@@ -8,14 +8,12 @@ import logging
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from ssmbak.restore.aws import Resource
 
 logger = logging.getLogger(__name__)
 
 
-class TestUseTags:
+class TestUseTags:  # pylint: disable=protected-access
     """Tests for the use_tags parameter in _get_versions()."""
 
     def setup_method(self):
@@ -51,10 +49,12 @@ class TestUseTags:
                     "ssmbakType": "String",
                 }
 
-                result = resource._get_versions("test-key", checktime, use_tags=True)
+                resource._get_versions("test-key", checktime, use_tags=True)
 
                 # Verify _get_tagset was called
-                assert mock_get_tagset.call_count >= 1, "_get_tagset should be called when use_tags=True"
+                assert mock_get_tagset.call_count >= 1, (
+                    "_get_tagset should be called when use_tags=True"
+                )
 
     def test_use_tags_false_skips_tagset(self):
         """When use_tags=False, _get_tagset is NOT called."""
@@ -80,10 +80,12 @@ class TestUseTags:
             mock_paginator.return_value = mock_page
 
             with patch.object(resource, "_get_tagset") as mock_get_tagset:
-                result = resource._get_versions("test-key", checktime, use_tags=False)
+                resource._get_versions("test-key", checktime, use_tags=False)
 
                 # Verify _get_tagset was NOT called
-                assert mock_get_tagset.call_count == 0, "_get_tagset should NOT be called when use_tags=False"
+                assert mock_get_tagset.call_count == 0, (
+                    "_get_tagset should NOT be called when use_tags=False"
+                )
 
     def test_use_tags_false_uses_lastmodified_as_time(self):
         """When use_tags=False, LastModified is used as the version time."""
@@ -182,7 +184,8 @@ class TestUseTags:
             # Should only include the old version (before checktime)
             assert "test-key" in result
             assert result["test-key"]["VersionId"] == "v1"
-            assert result["test-key"]["LastModified"] == datetime(2024, 1, 10, 10, 0, 0, tzinfo=timezone.utc)
+            expected_time = datetime(2024, 1, 10, 10, 0, 0, tzinfo=timezone.utc)
+            assert result["test-key"]["LastModified"] == expected_time
 
     def test_use_tags_false_selects_latest_before_checktime(self):
         """When use_tags=False with multiple versions before checktime, select most recent."""
