@@ -10,7 +10,7 @@ import pprint
 import random
 import string
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -29,7 +29,7 @@ def pretty(thingy):
 def str2datetime(checktime):
     """For ease of checktime creations."""
     return datetime.strptime(checktime, "%Y-%m-%dT%H:%M:%S").replace(
-        tzinfo=timezone.utc
+        tzinfo=UTC
     )
 
 
@@ -37,11 +37,11 @@ def update_time(action: dict) -> dict:
     """Updates time of an action to be processed by ssmabk."""
     if "Records" in action:  # it's mock AWS
         body = json.loads(action["Records"][0]["body"])
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         body["time"] = now.strftime("%Y-%m-%dT%H:%M:%SZ")
         action["Records"][0]["body"] = json.dumps(body)
     else:
-        action["time"] = datetime.now(tz=timezone.utc)
+        action["time"] = datetime.now(tz=UTC)
     return action
 
 
@@ -126,7 +126,7 @@ def delete_params(names):
         deleted_params[name] = deleted_param
     # deleteds have no tags, so LastModified, thus sleep
     time.sleep(1)
-    deltime = datetime.now(tz=timezone.utc)
+    deltime = datetime.now(tz=UTC)
     # Sleep again to ensure recreations happen in a later second than deltime
     # This is required for <= semantics where exact matches are included
     time.sleep(1)
@@ -247,5 +247,5 @@ def check_classvar_counts(calls):
 
 def delete_some(n, names):
     """Delete n random elements from a list."""
-    random_indices = random.sample(range(0, len(names) - n), n)
+    random_indices = random.sample(range(len(names) - n), n)
     return n, [names[i] for i in random_indices]
