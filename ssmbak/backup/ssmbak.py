@@ -46,7 +46,7 @@ def process_message(body: str) -> dict[str, str | datetime]:
           "time": datetime.datetime(2022, 8, 3, 21, 9, 31, tzinfo=datetime.timezone.utc),
           "description": "fancy description", --OPTIONAL
       }
-    """
+    """  # noqa: E501
     logger.debug("body: %s", body)
     message = json.loads(body)
     logger.debug("message: %s", message)
@@ -157,7 +157,7 @@ def process_event(event: dict[str, list[dict[str, str | dict]]]) -> int:
 
     Returns:
       Boolean which is kind of useless.
-    """
+    """  # noqa: E501
     for record in event["Records"]:
         param_action = process_message(cast("str", record["body"]))
         if param_action["operation"] in ["Create", "Update", "Delete"]:

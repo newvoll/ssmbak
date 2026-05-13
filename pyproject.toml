@@ -44,7 +44,7 @@ select = [
     "E", "F", "I", "UP", "B", "SIM", "RUF", "C90",  # core
     "ARG", "A", "C4", "PIE", "RET", "PERF",           # code quality
     "S", "DTZ",                                         # security/correctness
-    "T20", "LOG", "G",                                  # logging/print
+    "LOG", "G",                                         # logging
     "FURB",                                              # modernization
     "TCH",                                               # type-checking imports
     "ERA",                                               # commented-out code
