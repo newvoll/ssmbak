@@ -6,8 +6,8 @@ import os
 import re
 import sys
 import urllib.parse
-from datetime import datetime, timezone
-from typing import Union, cast
+from datetime import UTC, datetime
+from typing import cast
 
 import boto3
 from botocore.exceptions import ClientError
@@ -27,7 +27,7 @@ def _sanitize_tag_value(value: str) -> str:
     return sanitized[:256]
 
 
-def process_message(body: str) -> dict[str, Union[str, datetime]]:
+def process_message(body: str) -> dict[str, str | datetime]:
     """Transforms a message from EventBridge (via SQS) to friendly format.
 
     NOTE: for some reason only top-level key names arrive without a
@@ -51,7 +51,7 @@ def process_message(body: str) -> dict[str, Union[str, datetime]]:
     message = json.loads(body)
     logger.debug("message: %s", message)
     checktime = datetime.strptime(message["time"], "%Y-%m-%dT%H:%M:%SZ").replace(
-        tzinfo=timezone.utc
+        tzinfo=UTC
     )
     action = {
         "name": message["detail"]["name"],
@@ -129,7 +129,7 @@ def backup(action: dict) -> int:
     return result["ResponseMetadata"]["HTTPStatusCode"]
 
 
-def process_event(event: dict[str, list[dict[str, Union[str, dict]]]]) -> int:
+def process_event(event: dict[str, list[dict[str, str | dict]]]) -> int:
     """Extracts the body from the event for backup
 
     Arguments:
@@ -159,7 +159,7 @@ def process_event(event: dict[str, list[dict[str, Union[str, dict]]]]) -> int:
       Boolean which is kind of useless.
     """  # pylint: disable=line-too-long
     for record in event["Records"]:
-        param_action = process_message(cast(str, record["body"]))
+        param_action = process_message(cast("str", record["body"]))
         if param_action["operation"] in ["Create", "Update", "Delete"]:
             res = backup(param_action)
         else:

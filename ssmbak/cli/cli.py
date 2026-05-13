@@ -9,7 +9,7 @@ import logging
 import os
 import pprint
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from importlib.metadata import metadata, version
 from textwrap import wrap
 
@@ -69,7 +69,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 checktime = datetime.strptime(args.checktime, "%Y-%m-%dT%H:%M:%S").replace(
-    tzinfo=timezone.utc
+    tzinfo=UTC
 )
 
 

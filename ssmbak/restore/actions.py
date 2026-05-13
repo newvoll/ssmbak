@@ -22,7 +22,7 @@ path.restore()  #  == previews
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import cast
 
 from ssmbak.restore.aws import Resource
@@ -269,7 +269,7 @@ class ParamPath(Resource):
             logger.warning(
                 "Key %s doesn't have a version before %s", name, self.checktime
             )
-            return {"Name": name, "Modified": datetime.now(tz=timezone.utc)}
+            return {"Name": name, "Modified": datetime.now(tz=UTC)}
         if "Deleted" in version:
             return {
                 "Name": name,
@@ -281,9 +281,9 @@ class ParamPath(Resource):
         result: Preview = {
             "Name": name,
             "Value": version["Body"],
-            "Type": cast(SSMType, tagset["ssmbakType"]),
+            "Type": cast("SSMType", tagset["ssmbakType"]),
             "Modified": datetime.fromtimestamp(
-                int(tagset["ssmbakTime"]), tz=timezone.utc
+                int(tagset["ssmbakTime"]), tz=UTC
             ),
         }
         if "ssmbakDescription" in tagset:
