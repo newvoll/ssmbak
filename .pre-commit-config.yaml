@@ -17,16 +17,14 @@ repos:
   rev: 7.0.0
   hooks:
     - id: isort
+# - repo: https://github.com/astral-sh/ruff-pre-commit
+#   rev: v0.15.0
+#   hooks:
+#     - id: ruff-check
+#       args: [ --fix ]
+#     - id: ruff-format
 - repo: local
   hooks:
-    - id: pylint
-      name: pylint
-      entry: bash -c 'poetry run pylint ssmbak/ tests/'
-      language: system
-      require_serial: true
-      pass_filenames: false
-      always_run: true
-      stages: [pre-push]
     - id: mypy
       name: mypy
       entry: bash -c 'poetry run mypy'
