@@ -9,14 +9,6 @@ repos:
     - id: check-yaml
       args: ['--unsafe']
     - id: check-added-large-files
-- repo: https://github.com/psf/black
-  rev: 25.11.0
-  hooks:
-    - id: black
-- repo: https://github.com/pycqa/isort
-  rev: 7.0.0
-  hooks:
-    - id: isort
 # - repo: https://github.com/astral-sh/ruff-pre-commit
 #   rev: v0.15.0
 #   hooks:

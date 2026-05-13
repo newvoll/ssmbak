@@ -184,12 +184,10 @@ class Resource:
         # describe_parameters can handle up to 50 parameters at once
         batch_size = 50
         for i in range(0, len(names), batch_size):
-            batch = names[i:i + batch_size]
+            batch = names[i : i + batch_size]
             try:
                 described = self.ssm.describe_parameters(
-                    ParameterFilters=[
-                        {"Key": "Name", "Values": batch}
-                    ]
+                    ParameterFilters=[{"Key": "Name", "Values": batch}]
                 )["Parameters"]
                 for desc in described:
                     param_name = desc["Name"]
@@ -345,7 +343,11 @@ class Resource:
         return all_versions
 
     def _get_versions(
-        self, key: str, checktime: datetime, recurse: bool = False, use_tags: bool = True
+        self,
+        key: str,
+        checktime: datetime,
+        recurse: bool = False,
+        use_tags: bool = True,
     ) -> dict[str, Version]:
         """Efficiently looks for the version most recently backed-up before checktime.
 

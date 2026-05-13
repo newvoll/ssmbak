@@ -23,7 +23,7 @@ def _sanitize_tag_value(value: str) -> str:
     S3 allows: letters, numbers, spaces, and + - = . _ : / @
     Also truncates to 256 chars (S3 tag value limit).
     """
-    sanitized = re.sub(r'[^a-zA-Z0-9 +\-=._:/@]', '', value)
+    sanitized = re.sub(r"[^a-zA-Z0-9 +\-=._:/@]", "", value)
     return sanitized[:256]
 
 
