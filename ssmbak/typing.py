@@ -1,9 +1,7 @@
 """Typing aliases"""
 
 from datetime import datetime
-from typing import Literal, TypedDict
-
-from typing_extensions import NotRequired
+from typing import Literal, NotRequired, TypedDict
 
 SSMType = Literal["SecureString", "String", "StringList"]
 

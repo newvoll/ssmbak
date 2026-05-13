@@ -373,7 +373,7 @@ aws logs tail --format short /aws/lambda/$SSMBAK_LAMBDANAME
 ```
 
 ```
-2024-06-13T20:11:07 INIT_START Runtime Version: python:3.10.v36	Runtime Version ARN: arn:aws:lambda:us-west-2::runtime:bbd47e5ef4020932b9374e2ab9f9ed3bac502f27e17a031c35d9fb8935cf1f8c
+2024-06-13T20:11:07 INIT_START Runtime Version: python:3.11.v36	Runtime Version ARN: arn:aws:lambda:us-west-2::runtime:bbd47e5ef4020932b9374e2ab9f9ed3bac502f27e17a031c35d9fb8935cf1f8c
 2024-06-13T20:11:07 START RequestId: d404f4c7-1c53-5e41-a7db-aa2248dee8cd Version: $LATEST
 2024-06-13T20:11:10 [INFO]	2024-06-13T20:11:10.776Z	d404f4c7-1c53-5e41-a7db-aa2248dee8cd	put_object {'Bucket': 'ssmbak-bucket-vhvs73zpfvy5', 'Key': '/testyssmbak/3', 'Tagging': 'ssmbakTime=1718309456&ssmbakType=String', 'Body': 'initial'}
 2024-06-13T20:11:10 [INFO]	2024-06-13T20:11:10.964Z	d404f4c7-1c53-5e41-a7db-aa2248dee8cd	result: 200
@@ -411,9 +411,7 @@ typing on push.
 
 # Testing
 Testing uses localstack, as you can see in the [Github
-actions](https://github.com/newvoll/ssmbak/actions). `docker-compose up` should do the trick, then `./tests/test_localstack.sh`.
-
-* `source tests/localstack_env.sh` to point ssmbak to localstack.
+actions](https://github.com/newvoll/ssmbak/actions). `docker compose up ssmbak --detach`, then `poetry run pytest`.
 
 * Recent docker versions allow for `docker-compose up --watch`, allowing for
 hot-reloading of the lambda.
