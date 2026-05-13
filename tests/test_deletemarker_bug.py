@@ -1,7 +1,5 @@
 """Test to reproduce the DeleteMarker bug when a parameter is recreated."""
 
-# pylint: skip-file
-
 import logging
 import time
 from datetime import UTC, datetime

@@ -93,7 +93,6 @@ def test_key():
     # restore with dels
     key.restore()
     with pytest.raises(Exception):
-        # pylint: disable=expression-not-assigned
         pytest.ssm.get_parameter(Name=name, WithDecryption=True)["Parameter"]
 
 

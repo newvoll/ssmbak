@@ -13,7 +13,7 @@ from ssmbak.restore.aws import Resource
 logger = logging.getLogger(__name__)
 
 
-class TestUseTags:  # pylint: disable=protected-access
+class TestUseTags:
     """Tests for the use_tags parameter in _get_versions()."""
 
     def setup_method(self):

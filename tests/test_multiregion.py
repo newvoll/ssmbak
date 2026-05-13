@@ -15,7 +15,7 @@ ALT_BUCKET = "ssmbak-test-alt-region"
 ALT_PATH = "/testmultiregion"
 
 
-def simulate_backup(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+def simulate_backup(
     s3, ssm, bucket, name, value, param_type="String"
 ):
     """Simulate what ssmbak.backup does: write to S3 with tags."""
@@ -73,7 +73,7 @@ def alt_region_resources():
             )
 
 
-def test_backup_restore_alt_region(alt_region_resources):  # pylint: disable=redefined-outer-name
+def test_backup_restore_alt_region(alt_region_resources):
     """Full backup/restore cycle in alternate region."""
     res = alt_region_resources
     name = f"{ALT_PATH}/{rando()}"
@@ -104,7 +104,7 @@ def test_backup_restore_alt_region(alt_region_resources):  # pylint: disable=red
     assert restored["Parameter"]["Value"] == value
 
 
-def test_region_isolation(alt_region_resources):  # pylint: disable=redefined-outer-name
+def test_region_isolation(alt_region_resources):
     """Data in alt region not visible from default region."""
     res = alt_region_resources
     name = f"{ALT_PATH}/{rando()}"

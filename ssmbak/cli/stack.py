@@ -35,7 +35,6 @@ parser.add_argument(
     help="aws region, defaults to boto's default",
     default="",
 )
-# pylint: disable=duplicate-code
 parser.add_argument(
     "-v",
     "--verbose",
@@ -43,7 +42,6 @@ parser.add_argument(
     default=False,
     help="increase logging verbosity",
 )
-# pylint: enable=duplicate-code
 args = parser.parse_args()
 
 
@@ -54,7 +52,6 @@ def main():
     try:
         region = helpers.sort_region(args.region)
         _do_cfn(region)
-    # pylint: disable=duplicate-code
     except KeyboardInterrupt:
         print("Interrupted")
         sys.exit(1)
@@ -74,7 +71,6 @@ def main():
             "3) region= in ~/.aws/config."
         )
         sys.exit(1)
-    # pylint: enable=duplicate-code
 
 
 def _do_cfn(region):

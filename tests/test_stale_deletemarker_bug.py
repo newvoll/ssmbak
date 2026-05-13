@@ -10,8 +10,6 @@ The root cause is in the restore query logic which doesn't properly
 filter versions by timestamp before selecting the "most recent" one.
 """
 
-# pylint: skip-file
-
 import json
 import logging
 import time

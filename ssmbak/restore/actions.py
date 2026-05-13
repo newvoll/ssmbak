@@ -72,7 +72,7 @@ class ParamPath(Resource):
       :param versions: A cache used for preview/restore, starts empty
     """
 
-    def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    def __init__(
         self,
         name: str,
         checktime: datetime,

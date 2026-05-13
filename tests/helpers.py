@@ -139,7 +139,6 @@ def delete_params(names):
         post_delete_action = update_time(action)
         ssmbak.backup(post_delete_action)
     time.sleep(1)
-    # pylint: disable=fixme
     # TODO: test to make sure deleteds don't appear if not there_now?
     return deltime, deleted_params
 

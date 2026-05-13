@@ -37,7 +37,7 @@ ruff = "^0.15.12"
 [tool.ruff]
 target-version = "py311"
 line-length = 88
-extend-exclude = ["tests"]
+extend-exclude = ["tests", "docs"]
 
 [tool.ruff.lint]
 select = [

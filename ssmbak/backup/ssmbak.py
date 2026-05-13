@@ -157,7 +157,7 @@ def process_event(event: dict[str, list[dict[str, str | dict]]]) -> int:
 
     Returns:
       Boolean which is kind of useless.
-    """  # pylint: disable=line-too-long
+    """
     for record in event["Records"]:
         param_action = process_message(cast("str", record["body"]))
         if param_action["operation"] in ["Create", "Update", "Delete"]:
@@ -171,6 +171,6 @@ def process_event(event: dict[str, list[dict[str, str | dict]]]) -> int:
     return res
 
 
-def handler(event: dict, context) -> int:  # pylint: disable=unused-argument
+def handler(event: dict, _context) -> int:
     """Skipping module import just for context typing."""
     return process_event(event)

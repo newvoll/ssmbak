@@ -101,7 +101,6 @@ def test_path(recurse):
     path.restore()
     for name in to_deletes:
         with pytest.raises(Exception):
-            # pylint: disable=expression-not-assigned
             pytest.ssm.get_parameter(Name=name, WithDecryption=True)["Parameter"]
     # helpers.check_classvar_counts(
     #     {

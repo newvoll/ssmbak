@@ -20,7 +20,6 @@ from ssmbak.cli import helpers
 logger = logging.getLogger(__name__)
 
 
-# pylint: disable=duplicate-code
 parser = argparse.ArgumentParser(
     description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
 )
@@ -58,7 +57,6 @@ parser.add_argument(
     help="increase logging verbosity",
 )
 args = parser.parse_args()
-# pylint: enable=duplicate-code
 ssm = boto3.client(
     "ssm",
     endpoint_url=os.getenv("AWS_ENDPOINT"),
@@ -81,7 +79,6 @@ def _get_params(names):
 
 def main():
     """Sorts region and bucket before backups."""
-    # pylint: disable=duplicate-code
     if args.verbose:
         logging.basicConfig(level=logging.INFO)
     try:
@@ -104,7 +101,6 @@ def main():
             "%s: %s", e.response["Error"]["Code"], e.response["Error"]["Message"]
         )
         sys.exit(1)
-    # pylint: enable=duplicate-code
 
 
 def backup(bucketname):

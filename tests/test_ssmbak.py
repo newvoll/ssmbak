@@ -58,17 +58,14 @@ def get_tagset(key):
 def test_sanitize_tag_value():
     """Test _sanitize_tag_value sanitizes and truncates tag values for S3."""
     # Test that parentheses are stripped
-    result = ssmbak._sanitize_tag_value("ssmbak bucket (auto-discovered)")  # pylint: disable=protected-access
-    assert result == "ssmbak bucket auto-discovered"
+    result = ssmbak._sanitize_tag_value("ssmbak bucket (auto-discovered)")    assert result == "ssmbak bucket auto-discovered"
 
     # Test that allowed special chars are preserved
-    result = ssmbak._sanitize_tag_value("test + value = good_result")  # pylint: disable=protected-access
-    assert result == "test + value = good_result"
+    result = ssmbak._sanitize_tag_value("test + value = good_result")    assert result == "test + value = good_result"
 
     # Test truncation to 256 chars
     long_string = "a" * 300
-    result = ssmbak._sanitize_tag_value(long_string)  # pylint: disable=protected-access
-    assert len(result) == 256
+    result = ssmbak._sanitize_tag_value(long_string)    assert len(result) == 256
     assert result == "a" * 256
 
 
