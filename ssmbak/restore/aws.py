@@ -12,17 +12,17 @@ from functools import cached_property
 from typing import TYPE_CHECKING, Any, ClassVar
 
 import boto3
-import botocore
 from botocore.exceptions import ClientError
 
-from ssmbak.typing import Preview, Version
-
 if TYPE_CHECKING:
+    import botocore
     from mypy_boto3_s3 import S3Client
     from mypy_boto3_s3.service_resource import S3ServiceResource
     from mypy_boto3_s3.type_defs import GetObjectOutputTypeDef
     from mypy_boto3_ssm import SSMClient
     from mypy_boto3_ssm.type_defs import PutParameterRequestTypeDef
+
+    from ssmbak.typing import Preview, Version
 
 
 logger = logging.getLogger(__name__)
@@ -115,7 +115,7 @@ class Resource:
             )["TagSet"]
             nice_tagset = {x["Key"]: x["Value"] for x in tagset}
         except ClientError as e:
-            if e.response["Error"]["Code"] in ["MethodNotAllowed"]:
+            if e.response["Error"]["Code"] == "MethodNotAllowed":
                 nice_tagset = {}
             else:
                 raise e
@@ -233,7 +233,7 @@ class Resource:
         else:
             params = []
         for name in {x["Name"] for x in params}:
-            keyed_params[name] = [x for x in params if x["Name"] == name][0]
+            keyed_params[name] = next(x for x in params if x["Name"] == name)
 
         # Fetch descriptions for all parameters
         if keyed_params:
