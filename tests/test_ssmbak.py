@@ -3,7 +3,7 @@
 import json
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -35,7 +35,7 @@ def update_name(message_j, the_name):
 
 def tagtime(key: str, version: dict) -> datetime:
     """Given a key's version, will return the time of the event's creation."""
-    if not "VersionId" in version:  # localstack weirdness?
+    if "VersionId" not in version:  # localstack weirdness?
         version["VersionId"] = "null"
     tagset = pytest.s3.get_object_tagging(
         Bucket=pytest.bucketname, Key=key, VersionId=version["VersionId"]
@@ -43,7 +43,7 @@ def tagtime(key: str, version: dict) -> datetime:
     logger.debug("tagset: %s", tagset)
     tag = [x for x in tagset if x["Key"] == "ssmbakTime"].pop()
     logger.debug("tag: %s", tag)
-    utc_time = datetime.fromtimestamp(int(tag["Value"]), tz=timezone.utc)
+    utc_time = datetime.fromtimestamp(int(tag["Value"]), tz=UTC)
     return utc_time
 
 
@@ -58,16 +58,16 @@ def get_tagset(key):
 def test_sanitize_tag_value():
     """Test _sanitize_tag_value sanitizes and truncates tag values for S3."""
     # Test that parentheses are stripped
-    result = ssmbak._sanitize_tag_value("ssmbak bucket (auto-discovered)")  # pylint: disable=protected-access
+    result = ssmbak._sanitize_tag_value("ssmbak bucket (auto-discovered)")
     assert result == "ssmbak bucket auto-discovered"
 
     # Test that allowed special chars are preserved
-    result = ssmbak._sanitize_tag_value("test + value = good_result")  # pylint: disable=protected-access
+    result = ssmbak._sanitize_tag_value("test + value = good_result")
     assert result == "test + value = good_result"
 
     # Test truncation to 256 chars
     long_string = "a" * 300
-    result = ssmbak._sanitize_tag_value(long_string)  # pylint: disable=protected-access
+    result = ssmbak._sanitize_tag_value(long_string)
     assert len(result) == 256
     assert result == "a" * 256
 
@@ -92,11 +92,11 @@ def test_backup_create_root_pathkey(backup_source):
         pytest.skip()
     testo = slurp_helper("create")
     action = ssmbak.process_message(update_name(testo, noslash))
-    backup_action = getattr(backup_source, "process_message")(
+    backup_action = backup_source.process_message(
         update_name(testo, noslash)
     )
     new_stuff = helpers.prep(action)
-    getattr(backup_source, "backup")(backup_action)
+    backup_source.backup(backup_action)
     version = pytest.s3.get_object(Bucket=pytest.bucketname, Key=action["name"])
     logger.debug("version: %s", version)
     assert version["ResponseMetadata"]["HTTPStatusCode"] == 200
@@ -107,7 +107,7 @@ def test_backup_create_root_pathkey(backup_source):
     # not the best test, but cya
     taggy = tagtime(action["name"], version)
     logger.debug(taggy)
-    assert taggy == datetime(2022, 8, 3, 21, 9, 31, tzinfo=timezone.utc)
+    assert taggy == datetime(2022, 8, 3, 21, 9, 31, tzinfo=UTC)
 
 
 @pytest.mark.parametrize("backup_source", [local_lambda, ssmbak])
@@ -124,9 +124,9 @@ def test_backup_create(backup_source, totest):
         pytest.skip()
     testo = slurp_helper(totest)
     action = ssmbak.process_message(update_name(testo, NAME))
-    backup_action = getattr(backup_source, "process_message")(update_name(testo, NAME))
+    backup_action = backup_source.process_message(update_name(testo, NAME))
     new_stuff = helpers.prep(action)
-    getattr(backup_source, "backup")(backup_action)
+    backup_source.backup(backup_action)
     version = pytest.s3.get_object(Bucket=pytest.bucketname, Key=action["name"])
     logger.debug("version: %s", version)
     assert version["ResponseMetadata"]["HTTPStatusCode"] == 200
@@ -137,7 +137,7 @@ def test_backup_create(backup_source, totest):
     # not the best test, but cya
     taggy = tagtime(action["name"], version)
     logger.debug(taggy)
-    assert taggy == datetime(2022, 8, 3, 21, 9, 31, tzinfo=timezone.utc)
+    assert taggy == datetime(2022, 8, 3, 21, 9, 31, tzinfo=UTC)
 
 
 def check_description(check_tagset: dict, action: dict) -> bool:
@@ -171,10 +171,10 @@ def test_backup_update(backup_source, totest):
         pytest.skip()
     testo = slurp_helper(totest)
     action = ssmbak.process_message(update_name(testo, NAME))
-    backup_action = getattr(backup_source, "process_message")(update_name(testo, NAME))
+    backup_action = backup_source.process_message(update_name(testo, NAME))
     new_stuff = helpers.prep(action)
-    getattr(backup_source, "backup")(helpers.update_time(backup_action))
-    now = datetime.now(tz=timezone.utc)
+    backup_source.backup(helpers.update_time(backup_action))
+    now = datetime.now(tz=UTC)
     logger.debug("now: %s", now)
     check = pytest.s3.get_object(Bucket=pytest.bucketname, Key=action["name"])
     check_tagset = get_tagset(action["name"])
@@ -198,10 +198,10 @@ def test_backup_delete(backup_source):
     if backup_source == local_lambda and not pytest.check_local():
         pytest.skip()
     testo = slurp_helper("delete")
-    backup_action = getattr(backup_source, "process_message")(update_name(testo, NAME))
+    backup_action = backup_source.process_message(update_name(testo, NAME))
     action = ssmbak.process_message(update_name(testo, NAME))
     helpers.prep(action)
-    getattr(backup_source, "backup")(backup_action)
+    backup_source.backup(backup_action)
     ssmbak.backup(action)
     there = True
     try:
@@ -219,11 +219,11 @@ def test_backup_create_noparam(backup_source):
         pytest.skip()
     testo = slurp_helper("create")
     action = ssmbak.process_message(update_name(testo, NAME))
-    backup_action = getattr(backup_source, "process_message")(update_name(testo, NAME))
+    backup_action = backup_source.process_message(update_name(testo, NAME))
     logger.debug("action: %s", action)
     helpers.prep(action)
     pytest.ssm.delete_parameter(Name=action["name"])
-    res = getattr(backup_source, "backup")(backup_action)
+    res = backup_source.backup(backup_action)
     if backup_source == local_lambda:
         # this means nothing with localstack
         assert res.status_code == 200
@@ -391,7 +391,7 @@ def test_preview_excludes_deleted_at_checktime_still_deleted():
     ssmbak.backup(helpers.update_time(delete_action))
 
     time.sleep(1)
-    checktime = datetime.now(tz=timezone.utc)
+    checktime = datetime.now(tz=UTC)
     time.sleep(1)
 
     # Ensure parameter doesn't exist in SSM
@@ -422,7 +422,7 @@ def test_preview_includes_deleted_at_checktime_recreated():
     ssmbak.backup(helpers.update_time(delete_action))
 
     time.sleep(1)
-    checktime = datetime.now(tz=timezone.utc)
+    checktime = datetime.now(tz=UTC)
     time.sleep(1)
 
     # Recreate parameter in SSM

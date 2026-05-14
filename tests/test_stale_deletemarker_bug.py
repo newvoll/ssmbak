@@ -10,12 +10,10 @@ The root cause is in the restore query logic which doesn't properly
 filter versions by timestamp before selecting the "most recent" one.
 """
 
-# pylint: skip-file
-
 import json
 import logging
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -49,7 +47,7 @@ def test_stale_delete_marker_should_not_override_newer_backup(backup_source):
     # T1 is old delete (05:23:42 in real scenario)
     # T2 is new create (05:32:10 in real scenario)
     # T3 is query time (05:33:15 in real scenario)
-    base_time = datetime.now(tz=timezone.utc)
+    base_time = datetime.now(tz=UTC)
     t1_delete_event = base_time + timedelta(seconds=10)  # Event time for delete
     t2_create_event = base_time + timedelta(seconds=20)  # Event time for create (LATER)
     t3_query = base_time + timedelta(seconds=30)  # Query time
@@ -62,7 +60,7 @@ def test_stale_delete_marker_should_not_override_newer_backup(backup_source):
     # Step 1: Create backup FIRST (early LastModified, but LATE event time T2)
     logger.info("Step 1: Creating backup with event time T2 (LATER event time)")
     message = helpers.prep_message(name, "Create", "String", description=False)
-    backup_action = getattr(backup_source, "process_message")(message)
+    backup_action = backup_source.process_message(message)
     # Set event time to T2 (later)
     if "Records" in backup_action:  # local_lambda
         body = json.loads(backup_action["Records"][0]["body"])
@@ -71,7 +69,7 @@ def test_stale_delete_marker_should_not_override_newer_backup(backup_source):
     else:  # ssmbak library
         backup_action["time"] = t2_create_event
     pytest.ssm.put_parameter(Name=name, Value="new", Type="String", Overwrite=True)
-    getattr(backup_source, "backup")(backup_action)
+    backup_source.backup(backup_action)
     time.sleep(2)  # Ensure time difference
     logger.info("Backup created: LastModified=early, event time=T2 (late)")
 
@@ -83,7 +81,7 @@ def test_stale_delete_marker_should_not_override_newer_backup(backup_source):
     )
     pytest.ssm.delete_parameter(Name=name)
     delete_message = helpers.prep_message(name, "Delete", "String")
-    delete_backup_action = getattr(backup_source, "process_message")(delete_message)
+    delete_backup_action = backup_source.process_message(delete_message)
     # Set event time to T1 (earlier than backup's T2)
     if "Records" in delete_backup_action:  # local_lambda
         body = json.loads(delete_backup_action["Records"][0]["body"])
@@ -91,7 +89,7 @@ def test_stale_delete_marker_should_not_override_newer_backup(backup_source):
         delete_backup_action["Records"][0]["body"] = json.dumps(body)
     else:  # ssmbak library
         delete_backup_action["time"] = t1_delete_event
-    getattr(backup_source, "backup")(delete_backup_action)
+    backup_source.backup(delete_backup_action)
     time.sleep(1)
     logger.info("Delete marker created: LastModified=late, event time=T1 (early)")
 

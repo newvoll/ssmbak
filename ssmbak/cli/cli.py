@@ -9,7 +9,7 @@ import logging
 import os
 import pprint
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from importlib.metadata import metadata, version
 from textwrap import wrap
 
@@ -68,9 +68,7 @@ parser.add_argument(
     help="print the version and quit",
 )
 args = parser.parse_args()
-checktime = datetime.strptime(args.checktime, "%Y-%m-%dT%H:%M:%S").replace(
-    tzinfo=timezone.utc
-)
+checktime = datetime.strptime(args.checktime, "%Y-%m-%dT%H:%M:%S").replace(tzinfo=UTC)
 
 
 def main():
@@ -88,9 +86,7 @@ def main():
         logger.fatal("Interrupted")
         sys.exit(1)
     except ClientError as e:
-        logger.fatal(
-            "%s: %s", e.response["Error"]["Code"], e.response["Error"]["Message"]
-        )
+        logger.fatal("%s: %s", e.response["Error"]["Code"], e.response["Error"]["Message"])
         if e.response["Error"]["Code"] == "ParameterNotFound":
             logger.fatal("Couldn't find SSM bucket param set by the stack.")
         sys.exit(1)

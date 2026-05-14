@@ -1,7 +1,7 @@
 """The main restore test."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -67,7 +67,7 @@ def test_key():
     assert [x["Name"] for x in previews] == [name]
     helpers.compare_previews_with_params(previews, initial_params)
     assert {x["Modified"] for x in previews} == {
-        datetime(2022, 8, 3, 21, 9, 31, tzinfo=timezone.utc)
+        datetime(2022, 8, 3, 21, 9, 31, tzinfo=UTC)
     }
     logger.info("restore, which uses preview")
     assert key.restore() == previews
@@ -93,7 +93,6 @@ def test_key():
     # restore with dels
     key.restore()
     with pytest.raises(Exception):
-        # pylint: disable=expression-not-assigned
         pytest.ssm.get_parameter(Name=name, WithDecryption=True)["Parameter"]
 
 
@@ -126,7 +125,7 @@ def test_exact_time_match():
     assert previews[0]["Name"] == name
     helpers.compare_previews_with_params(previews, initial_params)
     assert previews[0]["Modified"] == datetime(
-        2022, 8, 3, 21, 9, 31, tzinfo=timezone.utc
+        2022, 8, 3, 21, 9, 31, tzinfo=UTC
     )
 
 
@@ -144,7 +143,7 @@ def test_tz_plus():
         "Name": name,
         "Value": initial_params[name]["Value"],
         "Type": initial_params[name]["Type"],
-        "Modified": datetime(2022, 8, 3, 21, 9, 31, tzinfo=timezone.utc),
+        "Modified": datetime(2022, 8, 3, 21, 9, 31, tzinfo=UTC),
     }
     if "Description" in initial_params[name]:
         kwargs["Description"] = initial_params[name]["Description"]

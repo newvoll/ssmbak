@@ -1,7 +1,7 @@
 """The main restore test."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -60,7 +60,7 @@ def test_path(recurse):
     assert [x["Name"] for x in previews] == sorted(names)
     helpers.compare_previews_with_params(previews, initial_params)
     assert {x["Modified"] for x in previews} == {
-        datetime(2022, 8, 3, 21, 9, 31, tzinfo=timezone.utc)
+        datetime(2022, 8, 3, 21, 9, 31, tzinfo=UTC)
     }
     logger.info("restore, which uses preview")
     assert path.restore() == previews
@@ -101,7 +101,6 @@ def test_path(recurse):
     path.restore()
     for name in to_deletes:
         with pytest.raises(Exception):
-            # pylint: disable=expression-not-assigned
             pytest.ssm.get_parameter(Name=name, WithDecryption=True)["Parameter"]
     # helpers.check_classvar_counts(
     #     {

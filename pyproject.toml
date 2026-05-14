@@ -3,17 +3,16 @@ name = "ssmbak"
 license = "MIT"
 repository = "https://github.com/newvoll/ssmbak"
 homepage = "https://github.com/newvoll/ssmbak"
-version = "0.3.2"
+version = "0.4.0rc1"
 description = "Event-driven SSM Param backups and point-in-time restore."
 authors = ["olmouse <olmouse@newvoll.net>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.11"
 boto3 = "^1.26.39"
 prettytable = "^3.5.0"
 cfn-lint = "^1.40.4"
-typing-extensions = {version = "^4.0", python = "<3.11"}
 
 [tool.poetry.scripts]
 ssmbak = "ssmbak.cli.cli:main"
@@ -22,10 +21,7 @@ ssmbak-stack = "ssmbak.cli.stack:main"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.1"
-black = "^24.4.2"
-pylint = "^3.2.2"
 pre-commit = "^3.7.1"
-isort = "^5.13.2"
 mypy = "^1.14.0"
 requests = "^2.32.3"
 awscli-local = "^0.22.0"
@@ -33,22 +29,34 @@ sphinx = "^7.3.7"
 sphinx-rtd-theme = "^2.0.0"
 boto3-stubs = {extras = ["cloudformation", "s3", "ssm"], version = "^1.40.70"}
 types-pyyaml = "^6.0.12.20250915"
+python-dotenv = "^1.2.2"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.15.12"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+extend-exclude = ["tests", "docs"]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "I", "UP", "B", "SIM", "RUF", "C90",  # core
+    "ARG", "A", "C4", "PIE", "RET", "PERF",           # code quality
+    "S", "DTZ",                                         # security/correctness
+    "LOG", "G",                                         # logging
+    "FURB",                                              # modernization
+    "TCH",                                               # type-checking imports
+    "ERA",                                               # commented-out code
+]
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.11"
 files = ["ssmbak"]
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.isort]
-profile = "black"
-
-[tool.pylint]
-ignored-classes = ["pytest"]
-ignore-paths = '^docs/'
-
 
 [tool.poetry.urls]
 Homepage = "https://github.com/newvoll/ssmbak"

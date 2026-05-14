@@ -2,7 +2,7 @@
 
 import os
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import boto3
 import pytest
@@ -15,7 +15,7 @@ ALT_BUCKET = "ssmbak-test-alt-region"
 ALT_PATH = "/testmultiregion"
 
 
-def simulate_backup(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+def simulate_backup(
     s3, ssm, bucket, name, value, param_type="String"
 ):
     """Simulate what ssmbak.backup does: write to S3 with tags."""
@@ -24,7 +24,7 @@ def simulate_backup(  # pylint: disable=too-many-arguments,too-many-positional-a
 
     # Write to S3 with backup tags (what Lambda does)
     # NOTE: ssmbak.backup keeps the leading slash in the S3 key
-    now = int(datetime.now(tz=timezone.utc).timestamp())
+    now = int(datetime.now(tz=UTC).timestamp())
     s3.put_object(
         Bucket=bucket,
         Key=name,  # Keep leading slash to match ssmbak.backup behavior
@@ -73,7 +73,7 @@ def alt_region_resources():
             )
 
 
-def test_backup_restore_alt_region(alt_region_resources):  # pylint: disable=redefined-outer-name
+def test_backup_restore_alt_region(alt_region_resources):
     """Full backup/restore cycle in alternate region."""
     res = alt_region_resources
     name = f"{ALT_PATH}/{rando()}"
@@ -89,7 +89,7 @@ def test_backup_restore_alt_region(alt_region_resources):  # pylint: disable=red
     time.sleep(1)
 
     # Preview using ParamPath with alt region
-    pp = ParamPath(name, datetime.now(tz=timezone.utc), res["region"], res["bucket"])
+    pp = ParamPath(name, datetime.now(tz=UTC), res["region"], res["bucket"])
     previews = pp.preview()
 
     assert len(previews) == 1
@@ -104,7 +104,7 @@ def test_backup_restore_alt_region(alt_region_resources):  # pylint: disable=red
     assert restored["Parameter"]["Value"] == value
 
 
-def test_region_isolation(alt_region_resources):  # pylint: disable=redefined-outer-name
+def test_region_isolation(alt_region_resources):
     """Data in alt region not visible from default region."""
     res = alt_region_resources
     name = f"{ALT_PATH}/{rando()}"
@@ -121,12 +121,12 @@ def test_region_isolation(alt_region_resources):  # pylint: disable=redefined-ou
 
     # ParamPath with alt region should find it
     pp_alt = ParamPath(
-        name, datetime.now(tz=timezone.utc), res["region"], res["bucket"]
+        name, datetime.now(tz=UTC), res["region"], res["bucket"]
     )
     assert len(pp_alt.preview()) == 1
 
     # ParamPath with default region + default bucket should NOT find it
     pp_default = ParamPath(
-        name, datetime.now(tz=timezone.utc), pytest.region, pytest.bucketname
+        name, datetime.now(tz=UTC), pytest.region, pytest.bucketname
     )
     assert len(pp_default.preview()) == 0

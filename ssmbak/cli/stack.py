@@ -35,7 +35,6 @@ parser.add_argument(
     help="aws region, defaults to boto's default",
     default="",
 )
-# pylint: disable=duplicate-code
 parser.add_argument(
     "-v",
     "--verbose",
@@ -43,7 +42,6 @@ parser.add_argument(
     default=False,
     help="increase logging verbosity",
 )
-# pylint: enable=duplicate-code
 args = parser.parse_args()
 
 
@@ -54,14 +52,11 @@ def main():
     try:
         region = helpers.sort_region(args.region)
         _do_cfn(region)
-    # pylint: disable=duplicate-code
     except KeyboardInterrupt:
         print("Interrupted")
         sys.exit(1)
     except ClientError as e:
-        logger.fatal(
-            "%s: %s", e.response["Error"]["Code"], e.response["Error"]["Message"]
-        )
+        logger.fatal("%s: %s", e.response["Error"]["Code"], e.response["Error"]["Message"])
         sys.exit(1)
     except ParamValidationError:
         logger.fatal("ParamValidationError")
@@ -74,7 +69,6 @@ def main():
             "3) region= in ~/.aws/config."
         )
         sys.exit(1)
-    # pylint: enable=duplicate-code
 
 
 def _do_cfn(region):
@@ -90,10 +84,7 @@ def _do_cfn(region):
             print(f"Bucket: {stack.bucketname}")
             print(f"Cloudwatch log group: /aws/lambda/{stack.lambdaname}")
             print()
-            print(
-                "ssmbak-all will back up all ssm params if provided --do-it, "
-                "list if not"
-            )
+            print("ssmbak-all will back up all ssm params if provided --do-it, list if not")
             print()
         elif args.command == "create":
             print(

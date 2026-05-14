@@ -1,5 +1,13 @@
 """Preps defaults and state for tests"""
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
+from tests.safety import apply_safety_patch
+
+apply_safety_patch()
+
 import logging
 import os
 import sys

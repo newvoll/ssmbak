@@ -1,10 +1,8 @@
 """Test to reproduce the DeleteMarker bug when a parameter is recreated."""
 
-# pylint: skip-file
-
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -42,11 +40,11 @@ def test_recreated_parameter_after_delete(backup_source):
     logger.info("Creating initial parameter: %s", name)
     message = helpers.prep_message(name, "Create", "String", description=False)
     action = ssmbak.process_message(message)
-    backup_action = getattr(backup_source, "process_message")(message)
+    backup_action = backup_source.process_message(message)
     pytest.ssm.put_parameter(Name=name, Value="initial", Type="String", Overwrite=True)
-    getattr(backup_source, "backup")(helpers.update_time(backup_action))
+    backup_source.backup(helpers.update_time(backup_action))
     time.sleep(1)
-    t1 = datetime.now(tz=timezone.utc)
+    t1 = datetime.now(tz=UTC)
     logger.info("T1 (after create): %s", t1)
 
     # Sleep to ensure time difference
@@ -58,10 +56,10 @@ def test_recreated_parameter_after_delete(backup_source):
     delete_message = helpers.prep_message(name, "Delete", "String")
     delete_action = ssmbak.process_message(delete_message)
     delete_action = helpers.update_time(delete_action)
-    delete_backup_action = getattr(backup_source, "process_message")(delete_message)
-    getattr(backup_source, "backup")(helpers.update_time(delete_backup_action))
+    delete_backup_action = backup_source.process_message(delete_message)
+    backup_source.backup(helpers.update_time(delete_backup_action))
     time.sleep(1)
-    t2 = datetime.now(tz=timezone.utc)
+    t2 = datetime.now(tz=UTC)
     logger.info("T2 (after delete): %s", t2)
 
     # Sleep to ensure time difference
@@ -72,13 +70,13 @@ def test_recreated_parameter_after_delete(backup_source):
     recreate_message = helpers.prep_message(name, "Create", "String", description=False)
     recreate_action = ssmbak.process_message(recreate_message)
     recreate_action = helpers.update_time(recreate_action)
-    recreate_backup_action = getattr(backup_source, "process_message")(recreate_message)
+    recreate_backup_action = backup_source.process_message(recreate_message)
     pytest.ssm.put_parameter(
         Name=name, Value="recreated", Type="String", Overwrite=True
     )
-    getattr(backup_source, "backup")(helpers.update_time(recreate_backup_action))
+    backup_source.backup(helpers.update_time(recreate_backup_action))
     time.sleep(1)
-    t3 = datetime.now(tz=timezone.utc)
+    t3 = datetime.now(tz=UTC)
     logger.info("T3 (after recreate): %s", t3)
 
     # Modify SSM to differ from all three backup states to ensure preview includes them

@@ -1,6 +1,6 @@
 import os
 import sys
-from importlib.metadata import metadata, version
+from importlib.metadata import version
 
 sys.path.insert(0, os.path.abspath("../ssmbak/"))
 
