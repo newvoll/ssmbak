@@ -86,8 +86,7 @@ class Resource:
           version: dict of s3 version with processed tagset.
         """
         try:
-            ssmbak_time = datetime.fromtimestamp(int(version["tagset"]["ssmbakTime"]))
-            tagtime = ssmbak_time.astimezone(UTC)
+            tagtime = datetime.fromtimestamp(int(version["tagset"]["ssmbakTime"]), tz=UTC)
         except KeyError:
             tagtime = version["LastModified"]
         return tagtime
