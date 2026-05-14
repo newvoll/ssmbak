@@ -47,9 +47,11 @@ jobs:
       - name: pytest
         run: poetry run pytest -q --tb=line  # 18 passed in 24.90s
 
-      - name: Pylint
-        run: |
-          poetry run pylint $(git ls-files '*.py')
+      - name: Ruff check
+        run: poetry run ruff check
+
+      - name: Ruff format
+        run: poetry run ruff format --check
 
       - name: mypy
         run: poetry run mypy ssmbak
