@@ -96,7 +96,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Timeout: 30
-      Runtime: python3.11
+      Runtime: python3.13
       Code:
         ZipFile: REPLACEME
       Environment:
