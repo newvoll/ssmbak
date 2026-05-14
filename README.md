@@ -406,8 +406,8 @@ Session:
 # Development
 This is a [poetry](https://python-poetry.org/) project, so it should
 be butter once you get that sorted. Install
-[pre-commit](https://pre-commit.com/) for black on commit, lint and
-typing on push.
+[pre-commit](https://pre-commit.com/) for ruff check/format on commit,
+mypy on push.
 
 # Testing
 Testing uses localstack, as you can see in the [Github
@@ -417,13 +417,14 @@ actions](https://github.com/newvoll/ssmbak/actions). `docker compose up ssmbak -
 hot-reloading of the lambda.
 
 * Lambda tests use both the lambda's backup function and hitting the
-  local container running it. Container tests are skipped in AWS.
+  local container running it.
 
 
 ## Testing Gotchas
-* When testing on aws instead of localstack, don't use same bucket as running lambda!
-  * The lambda will be processing and backing up in addition to the tests.
-  * Tests will set versioning on the bucket and manipulate/destroy pytest.test_path.
+* Tests are pinned to localstack via `tests/safety.py` — boto3 client
+  creation raises `RuntimeError` for any non-localstack endpoint. Don't
+  disable this; tests will set versioning on the bucket and
+  manipulate/destroy `pytest.test_path`.
 
 
 # Addenda
