@@ -9,7 +9,7 @@ import argparse
 import logging
 import os
 import sys
-from datetime import datetime
+from datetime import UTC, datetime
 
 import boto3
 from botocore.exceptions import ClientError, NoRegionError
@@ -97,9 +97,7 @@ def main():
         )
         sys.exit(1)
     except ClientError as e:
-        logger.fatal(
-            "%s: %s", e.response["Error"]["Code"], e.response["Error"]["Message"]
-        )
+        logger.fatal("%s: %s", e.response["Error"]["Code"], e.response["Error"]["Message"])
         sys.exit(1)
 
 
@@ -125,7 +123,7 @@ def backup(bucketname):
                 "name": param["Name"],
                 "type": param["Type"],
                 "operation": "Update",
-                "time": datetime.now(),
+                "time": datetime.now(tz=UTC),
             }
             if "Description" in param:
                 action["description"] = param["Description"]

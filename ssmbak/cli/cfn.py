@@ -30,9 +30,7 @@ class Stack:
     def bucketname(self):
         """Returns just the bucketname created by the stack."""
         resources = self.resources()
-        bucketname = [
-            x["physical"] for x in resources if x["type"] == "AWS::S3::Bucket"
-        ][0]
+        bucketname = [x["physical"] for x in resources if x["type"] == "AWS::S3::Bucket"][0]
         return bucketname
 
     @property
@@ -43,9 +41,7 @@ class Stack:
         aws logs tail /aws/lambda/dev-ssmbak-resource-Function-SEmkoVs3DSgs
         """
         resources = self.resources()
-        lambdaname = [
-            x["physical"] for x in resources if x["type"] == "AWS::Lambda::Function"
-        ][0]
+        lambdaname = [x["physical"] for x in resources if x["type"] == "AWS::Lambda::Function"][0]
         return lambdaname
 
     def params(self):

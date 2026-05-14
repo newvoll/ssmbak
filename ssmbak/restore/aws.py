@@ -60,23 +60,17 @@ class Resource:
     @cached_property
     def s3(self) -> S3Client:
         """boto3 s3 client. There should only be one."""
-        return boto3.client(
-            "s3", endpoint_url=os.getenv("AWS_ENDPOINT"), region_name=self.region
-        )
+        return boto3.client("s3", endpoint_url=os.getenv("AWS_ENDPOINT"), region_name=self.region)
 
     @cached_property
     def s3res(self) -> S3ServiceResource:
         """boto3 s3 resource for backup contents. There should only be one."""
-        return boto3.resource(
-            "s3", endpoint_url=os.getenv("AWS_ENDPOINT"), region_name=self.region
-        )
+        return boto3.resource("s3", endpoint_url=os.getenv("AWS_ENDPOINT"), region_name=self.region)
 
     @cached_property
     def ssm(self) -> SSMClient:
         """boto3 ssm client. There should only be one."""
-        return boto3.client(
-            "ssm", endpoint_url=os.getenv("AWS_ENDPOINT"), region_name=self.region
-        )
+        return boto3.client("ssm", endpoint_url=os.getenv("AWS_ENDPOINT"), region_name=self.region)
 
     def _tagtime(self, version: Version) -> datetime:
         """Extracts datetime from the backup version.
@@ -225,18 +219,14 @@ class Resource:
           }
         """
         paginator = self.ssm.get_paginator("get_parameters_by_path")
-        paginated = paginator.paginate(
-            Path=path, Recursive=recurse, WithDecryption=True
-        )
+        paginated = paginator.paginate(Path=path, Recursive=recurse, WithDecryption=True)
         result = paginated.build_full_result()
         keyed_params = {}
         if result["Parameters"]:
             params = result["Parameters"]
         elif not path.endswith("/"):
             try:
-                param = self.ssm.get_parameter(Name=path, WithDecryption=True)[
-                    "Parameter"
-                ]
+                param = self.ssm.get_parameter(Name=path, WithDecryption=True)["Parameter"]
                 params = [param]
             except (KeyError, ClientError):  # nothing found
                 params = []
@@ -334,9 +324,7 @@ class Resource:
                 else:
                     # Filter to keys at same depth (same number of slashes)
                     n = key.count("/")
-                    page_versions = [
-                        x for x in page_versions if x["Key"].count("/") == n
-                    ]
+                    page_versions = [x for x in page_versions if x["Key"].count("/") == n]
 
             all_versions.extend(page_versions)
 

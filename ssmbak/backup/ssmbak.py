@@ -50,9 +50,7 @@ def process_message(body: str) -> dict[str, str | datetime]:
     logger.debug("body: %s", body)
     message = json.loads(body)
     logger.debug("message: %s", message)
-    checktime = datetime.strptime(message["time"], "%Y-%m-%dT%H:%M:%SZ").replace(
-        tzinfo=UTC
-    )
+    checktime = datetime.strptime(message["time"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
     action = {
         "name": message["detail"]["name"],
         "type": message["detail"]["type"],
@@ -163,9 +161,7 @@ def process_event(event: dict[str, list[dict[str, str | dict]]]) -> int:
         if param_action["operation"] in ["Create", "Update", "Delete"]:
             res = backup(param_action)
         else:
-            logger.warning(
-                "skipping %s %s", param_action["operation"], param_action["name"]
-            )
+            logger.warning("skipping %s %s", param_action["operation"], param_action["name"])
             res = 205
         logger.info("result: %s", res)
     return res

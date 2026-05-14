@@ -238,9 +238,7 @@ class ParamPath(Resource):
           ]
         """
         params = self.preview()
-        self._ssm_del_multi(
-            [x["Name"] for x in params if "Deleted" in x and x["Deleted"] is True]
-        )
+        self._ssm_del_multi([x["Name"] for x in params if "Deleted" in x and x["Deleted"] is True])
         for param in [x for x in params if "Deleted" not in x]:
             self._restore_preview(param)
         return params
@@ -266,9 +264,7 @@ class ParamPath(Resource):
         """
         version = self.get_latest_version(name)
         if version is None:
-            logger.warning(
-                "Key %s doesn't have a version before %s", name, self.checktime
-            )
+            logger.warning("Key %s doesn't have a version before %s", name, self.checktime)
             return {"Name": name, "Modified": datetime.now(tz=UTC)}
         if "Deleted" in version:
             return {
@@ -282,9 +278,7 @@ class ParamPath(Resource):
             "Name": name,
             "Value": version["Body"],
             "Type": cast("SSMType", tagset["ssmbakType"]),
-            "Modified": datetime.fromtimestamp(
-                int(tagset["ssmbakTime"]), tz=UTC
-            ),
+            "Modified": datetime.fromtimestamp(int(tagset["ssmbakTime"]), tz=UTC),
         }
         if "ssmbakDescription" in tagset:
             result["Description"] = tagset["ssmbakDescription"]

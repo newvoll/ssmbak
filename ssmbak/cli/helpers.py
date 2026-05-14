@@ -23,9 +23,7 @@ def sort_bucket(bucketname, region):
         template_file = f"{template_dir}/data/cfn.yml"
         template = cfn_yaml.load(template_file)
         key = template["Resources"]["BucketParam"]["Properties"]["Name"]
-        ssm = boto3.client(
-            "ssm", endpoint_url=os.getenv("AWS_ENDPOINT"), region_name=region
-        )
+        ssm = boto3.client("ssm", endpoint_url=os.getenv("AWS_ENDPOINT"), region_name=region)
         bucket_param = ssm.get_parameter(Name=key)
         res = bucket_param["Parameter"]["Value"]
         logger.info("%s set by SSM param %s", res, bucket_param["Parameter"]["Name"])

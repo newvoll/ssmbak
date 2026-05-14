@@ -56,9 +56,7 @@ def main():
         print("Interrupted")
         sys.exit(1)
     except ClientError as e:
-        logger.fatal(
-            "%s: %s", e.response["Error"]["Code"], e.response["Error"]["Message"]
-        )
+        logger.fatal("%s: %s", e.response["Error"]["Code"], e.response["Error"]["Message"])
         sys.exit(1)
     except ParamValidationError:
         logger.fatal("ParamValidationError")
@@ -86,10 +84,7 @@ def _do_cfn(region):
             print(f"Bucket: {stack.bucketname}")
             print(f"Cloudwatch log group: /aws/lambda/{stack.lambdaname}")
             print()
-            print(
-                "ssmbak-all will back up all ssm params if provided --do-it, "
-                "list if not"
-            )
+            print("ssmbak-all will back up all ssm params if provided --do-it, list if not")
             print()
         elif args.command == "create":
             print(
