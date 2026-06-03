@@ -34,6 +34,13 @@ That's it. All new params will automatically be backed-up and
 available for `ssmbak` point-in-time restore via CLI or lib, like:
 
 `ssmbak preview /my/ssm/path/ 2024-06-15T17:56:58`
+`ssmbak restore /my/ssm/path/ 2024-06-15T17:56:58`
+
+The same point-in-time machinery is exposed as `s3bak`, a standalone CLI (and `S3Path` lib class) for **any** versioned S3 bucket — not just ssmbak's. Subcommands: `preview`, `body` (download a past version to a file), `restore`. Bucket is explicit since it isn't tied to a stack:
+
+`s3bak preview my/object/key 2024-06-15T17:56:58 -b my-bucket`
+`s3bak restore my/object/key 2024-06-15T17:56:58 -b my-bucket`
+`s3bak body my/object/key 2024-06-15T17:56:58 -b my-bucket -o ./key`
 
 > You need a bunch of shady permissions to create the stack. Look for such errors if it fails.
 
