@@ -332,12 +332,10 @@ class Resource:
     def _list_all_versions(self, key: str, recurse: bool = False) -> list[Version]:
         """List S3 candidate versions under the prefix without time filtering.
 
-        Returns all versions (regular + normalized DeleteMarkers) that match the
-        recurse/depth semantics for key. No tag fetching, no per-key dedup, no
-        time filter — those happen downstream. Exposed so callers can both
-        (a) select the latest version at a checktime and
-        (b) discover which keys have any backup history at all (tracked set),
-        from a single S3 list operation.
+        No tag fetching, no per-key dedup, no time filter — those happen
+        downstream. Exposed so callers can both select the latest version at
+        a checktime and discover which keys have any backup history at all
+        (tracked set) from a single S3 list operation.
         """
         paginated = self._get_object_versions(key)
         return self._collect_all_candidate_versions(key, recurse, paginated)
@@ -350,31 +348,41 @@ class Resource:
     ) -> dict[str, Version]:
         """Pick the latest version per key whose event time is <= checktime.
 
-        Arguments:
-          all_versions: candidates from _list_all_versions
-          checktime: point in time
-          use_tags: if True, fetch ssmbakTime tags for precise event time;
-                    if False, use LastModified directly (faster, for non-SSM backups)
-
         Mutates each consumed version dict by attaching a "tagset" entry.
         """
+        # Select version with latest event time for each key
+        # Cannot rely on LastModified order - must check event times (ssmbakTime tags)
+        # to find the version with the latest event time before checktime
+        result = {}
         candidates: dict[str, list] = {}
+
         for version in all_versions:
             param_key = version["Key"]
+
+            # Fetch tags and check time (or use LastModified directly if use_tags=False)
             if use_tags:
                 version["tagset"] = self._get_tagset(param_key, version["VersionId"])
                 tagtime = self._tagtime(version)
             else:
+                # Skip tag fetching - use LastModified directly as event time
                 version["tagset"] = {}
                 tagtime = version["LastModified"]
-            # ssmbakTime is truncated to seconds when stored; compare at that precision.
-            if tagtime.replace(microsecond=0) <= checktime.replace(microsecond=0):
-                candidates.setdefault(param_key, []).append((tagtime, version))
 
-        result: dict[str, Version] = {}
+            # ssmbakTime is truncated to seconds (losing microseconds) when stored
+            # So compare at second-level precision to be fair
+            # Use <= to mean "event happened at or before this second"
+            if tagtime.replace(microsecond=0) <= checktime.replace(microsecond=0):
+                # Collect all versions that pass the time filter
+                if param_key not in candidates:
+                    candidates[param_key] = []
+                candidates[param_key].append((tagtime, version))
+
+        # Select version with latest event time for each key
         for param_key, versions in candidates.items():
+            # Sort by tagtime descending to get latest event time first
             versions.sort(key=lambda x: x[0], reverse=True)
             result[param_key] = versions[0][1]
+
         return result
 
     def _get_versions(
@@ -384,7 +392,7 @@ class Resource:
         recurse: bool = False,
         use_tags: bool = True,
     ) -> dict[str, Version]:
-        """Looks for the version most recently backed-up before checktime.
+        """Efficiently looks for the version most recently backed-up before checktime.
 
         The objects come from AWS a thousand at a time, but only with
         modified times corresponding to when they were backed-up (LastModified) and
@@ -400,6 +408,28 @@ class Resource:
           use_tags: if True (default), fetch ssmbakTime tags for precise event time;
                     if False, skip tag fetching and use LastModified directly (faster,
                     suitable for non-SSM backups like CFN templates)
+
+        Returns:
+          The same keyed versions as everywhere.
+
+          {
+              "/testyssmbak/88JCRX": {
+                  "ETag": '"9d2f3ea8da7b4feba87aeb4da1fcb5e0"',
+                  "Size": 6,
+                  "StorageClass": "STANDARD",
+                  "Key": "/testyssmbak/88JCRX",
+                  "VersionId": "vuyAs6cfwwSbMUi4o8O1qA",
+                  "IsLatest": True,
+                  "LastModified": datetime.datetime(
+                      2024, 6, 9, 16, 45, 4, tzinfo=tzutc()
+                  ),
+                  "Owner": {
+                      "DisplayName": "webfile",
+                      "ID": "75aaa08ebf849d0f8e7faeebf76c078efc7c6caea54ba06a",
+                  },
+                  "tagset": {"ssmbakTime": "1717951504", "ssmbakType": "SecureString"},
+              },
+          }
         """
         all_versions = self._list_all_versions(key, recurse)
         return self._select_versions_at(all_versions, checktime, use_tags)
