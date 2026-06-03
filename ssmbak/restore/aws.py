@@ -329,28 +329,64 @@ class Resource:
 
         return all_versions
 
-    def _list_all_versions(self, key: str, recurse: bool = False) -> list[Version]:
-        """List S3 candidate versions under the prefix without time filtering.
-
-        No tag fetching, no per-key dedup, no time filter — those happen
-        downstream. Exposed so callers can both select the latest version at
-        a checktime and discover which keys have any backup history at all
-        (tracked set) from a single S3 list operation.
-        """
-        paginated = self._get_object_versions(key)
-        return self._collect_all_candidate_versions(key, recurse, paginated)
-
-    def _select_versions_at(
+    def _get_versions(
         self,
-        all_versions: list[Version],
+        key: str,
         checktime: datetime,
+        recurse: bool = False,
         use_tags: bool = True,
-    ) -> dict[str, Version]:
-        """Pick the latest version per key whose event time is <= checktime.
+    ) -> tuple[dict[str, Version], set[str]]:
+        """Efficiently looks for the version most recently backed-up before checktime.
 
-        Mutates each consumed version dict by attaching a "tagset" entry.
+        The objects come from AWS a thousand at a time, but only with
+        modified times corresponding to when they were backed-up (LastModified) and
+        not when the original event was reported. Typically it's less
+        than a minute, but in the case of an outage it might be
+        longer. To be safe, we check the event times, encoded in s3
+        tags by the Lambda (ssmbakTime).
+
+        Arguments:
+          key: a single s3 key or path
+          checktime: the point in time for which to retrieve relative latest version
+          recurse: operate on all paths/keys under key/
+          use_tags: if True (default), fetch ssmbakTime tags for precise event time;
+                    if False, skip tag fetching and use LastModified directly (faster,
+                    suitable for non-SSM backups like CFN templates)
+
+        Returns:
+          A (result, tracked_keys) tuple. result is the keyed versions as
+          everywhere; tracked_keys is the set of s3 keys with any backup
+          history under the prefix, used by callers to distinguish
+          tracked-but-absent-at-checktime from never-tracked.
+
+          {
+              "/testyssmbak/88JCRX": {
+                  "ETag": '"9d2f3ea8da7b4feba87aeb4da1fcb5e0"',
+                  "Size": 6,
+                  "StorageClass": "STANDARD",
+                  "Key": "/testyssmbak/88JCRX",
+                  "VersionId": "vuyAs6cfwwSbMUi4o8O1qA",
+                  "IsLatest": True,
+                  "LastModified": datetime.datetime(
+                      2024, 6, 9, 16, 45, 4, tzinfo=tzutc()
+                  ),
+                  "Owner": {
+                      "DisplayName": "webfile",
+                      "ID": "75aaa08ebf849d0f8e7faeebf76c078efc7c6caea54ba06a",
+                  },
+                  "tagset": {"ssmbakTime": "1717951504", "ssmbakType": "SecureString"},
+              },
+          }
         """
-        # Select version with latest event time for each key
+        # Step 1: Get paginated versions from S3
+        paginated = self._get_object_versions(key)
+
+        # Step 2: Collect all candidate versions preserving order
+        # (DeleteMarkers before Versions, as in original code)
+        all_versions = self._collect_all_candidate_versions(key, recurse, paginated)
+        tracked_keys = {v["Key"] for v in all_versions}
+
+        # Step 3: Select version with latest event time for each key
         # Cannot rely on LastModified order - must check event times (ssmbakTime tags)
         # to find the version with the latest event time before checktime
         result = {}
@@ -383,56 +419,7 @@ class Resource:
             versions.sort(key=lambda x: x[0], reverse=True)
             result[param_key] = versions[0][1]
 
-        return result
-
-    def _get_versions(
-        self,
-        key: str,
-        checktime: datetime,
-        recurse: bool = False,
-        use_tags: bool = True,
-    ) -> dict[str, Version]:
-        """Efficiently looks for the version most recently backed-up before checktime.
-
-        The objects come from AWS a thousand at a time, but only with
-        modified times corresponding to when they were backed-up (LastModified) and
-        not when the original event was reported. Typically it's less
-        than a minute, but in the case of an outage it might be
-        longer. To be safe, we check the event times, encoded in s3
-        tags by the Lambda (ssmbakTime).
-
-        Arguments:
-          key: a single s3 key or path
-          checktime: the point in time for which to retrieve relative latest version
-          recurse: operate on all paths/keys under key/
-          use_tags: if True (default), fetch ssmbakTime tags for precise event time;
-                    if False, skip tag fetching and use LastModified directly (faster,
-                    suitable for non-SSM backups like CFN templates)
-
-        Returns:
-          The same keyed versions as everywhere.
-
-          {
-              "/testyssmbak/88JCRX": {
-                  "ETag": '"9d2f3ea8da7b4feba87aeb4da1fcb5e0"',
-                  "Size": 6,
-                  "StorageClass": "STANDARD",
-                  "Key": "/testyssmbak/88JCRX",
-                  "VersionId": "vuyAs6cfwwSbMUi4o8O1qA",
-                  "IsLatest": True,
-                  "LastModified": datetime.datetime(
-                      2024, 6, 9, 16, 45, 4, tzinfo=tzutc()
-                  ),
-                  "Owner": {
-                      "DisplayName": "webfile",
-                      "ID": "75aaa08ebf849d0f8e7faeebf76c078efc7c6caea54ba06a",
-                  },
-                  "tagset": {"ssmbakTime": "1717951504", "ssmbakType": "SecureString"},
-              },
-          }
-        """
-        all_versions = self._list_all_versions(key, recurse)
-        return self._select_versions_at(all_versions, checktime, use_tags)
+        return result, tracked_keys
 
     def _get_version_body(self, name: str, versionid: str) -> str:
         """Uses s3 object resource to get the contents of the version.

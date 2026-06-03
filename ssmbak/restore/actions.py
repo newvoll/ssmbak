@@ -159,13 +159,13 @@ class ParamPath(Resource):
 
         """
         if self.versions:
-            versions = self.versions
-        else:
-            all_versions = self._list_all_versions(self.name, recurse=self.recurse)
-            self.tracked_keys = {v["Key"] for v in all_versions}
-            versions = self._select_versions_at(all_versions, self.checktime)
-            self.versions = versions
-        return versions
+            return self.versions
+        self.versions, self.tracked_keys = self._get_versions(
+            self.name,
+            self.checktime,
+            recurse=self.recurse,
+        )
+        return self.versions
 
     def preview(self) -> list[Preview]:
         """Shows what would be restored.
@@ -321,7 +321,7 @@ class ParamPath(Resource):
         if name in self.versions:
             version = self.versions[name]
         else:
-            all_versions = self._get_versions(name, self.checktime)
+            all_versions, _ = self._get_versions(name, self.checktime)
             try:
                 version = all_versions[name]
                 self.versions[name] = version

@@ -109,7 +109,7 @@ class TestUseTags:
             mock_page.__iter__ = lambda self: iter([{"Versions": [mock_version]}])
             mock_paginator.return_value = mock_page
 
-            result = resource._get_versions("test-key", checktime, use_tags=False)
+            result, _ = resource._get_versions("test-key", checktime, use_tags=False)
 
             # Verify a version was returned
             assert "test-key" in result
@@ -139,7 +139,7 @@ class TestUseTags:
             mock_page.__iter__ = lambda self: iter([{"Versions": [mock_version]}])
             mock_paginator.return_value = mock_page
 
-            result = resource._get_versions("test-key", checktime, use_tags=False)
+            result, _ = resource._get_versions("test-key", checktime, use_tags=False)
 
             assert "test-key" in result
             assert result["test-key"]["tagset"] == {}
@@ -179,7 +179,7 @@ class TestUseTags:
             mock_page.__iter__ = lambda self: iter([{"Versions": [new_version, old_version]}])
             mock_paginator.return_value = mock_page
 
-            result = resource._get_versions("test-key", checktime, use_tags=False)
+            result, _ = resource._get_versions("test-key", checktime, use_tags=False)
 
             # Should only include the old version (before checktime)
             assert "test-key" in result
@@ -230,7 +230,7 @@ class TestUseTags:
             mock_page.__iter__ = lambda self: iter([{"Versions": versions}])
             mock_paginator.return_value = mock_page
 
-            result = resource._get_versions("test-key", checktime, use_tags=False)
+            result, _ = resource._get_versions("test-key", checktime, use_tags=False)
 
             # Should select v3 (most recent before checktime)
             assert "test-key" in result
