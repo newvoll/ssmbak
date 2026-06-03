@@ -6,7 +6,6 @@ state at a point in time (checktime).
 
 import argparse
 import logging
-import os
 import pprint
 import sys
 from datetime import UTC, datetime
@@ -19,12 +18,10 @@ from prettytable import PrettyTable
 from ssmbak.cli import helpers
 from ssmbak.restore.actions import ParamPath
 
-logger = logging.getLogger(__name__)
 pp = pprint.PrettyPrinter(indent=4)
 parser = argparse.ArgumentParser(
     description=__doc__,
     formatter_class=argparse.RawDescriptionHelpFormatter,
-    prog=os.path.basename(__file__),
 )
 parser.add_argument("command", help="one of preview or restore")
 parser.add_argument(
@@ -83,19 +80,21 @@ def main():
         result = _do_path(bucketname, region)
         _print_outs(result)
     except KeyboardInterrupt:
-        logger.fatal("Interrupted")
-        sys.exit(1)
+        print("Interrupted", file=sys.stderr)
+        sys.exit(130)
     except ClientError as e:
-        logger.fatal("%s: %s", e.response["Error"]["Code"], e.response["Error"]["Message"])
-        if e.response["Error"]["Code"] == "ParameterNotFound":
-            logger.fatal("Couldn't find SSM bucket param set by the stack.")
+        code = e.response["Error"]["Code"]
+        print(f"Error: {code}: {e.response['Error']['Message']}", file=sys.stderr)
+        if code == "ParameterNotFound":
+            print("Couldn't find SSM bucket param set by the stack.", file=sys.stderr)
         sys.exit(1)
     except NoRegionError as e:
-        logger.fatal(e)
-        logger.fatal(
+        print(f"Error: {e}", file=sys.stderr)
+        print(
             "Specify a region 1) as an argument, "
             "2) using env var AWS_DEFAULT_REGION, or "
-            "3) region= in ~/.aws/config."
+            "3) region= in ~/.aws/config.",
+            file=sys.stderr,
         )
         sys.exit(1)
 
