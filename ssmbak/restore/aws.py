@@ -335,7 +335,7 @@ class Resource:
         checktime: datetime,
         recurse: bool = False,
         use_tags: bool = True,
-    ) -> dict[str, Version]:
+    ) -> tuple[dict[str, Version], set[str]]:
         """Efficiently looks for the version most recently backed-up before checktime.
 
         The objects come from AWS a thousand at a time, but only with
@@ -354,7 +354,10 @@ class Resource:
                     suitable for non-SSM backups like CFN templates)
 
         Returns:
-          The same keyed versions as everywhere.
+          A (result, tracked_keys) tuple. result is the keyed versions as
+          everywhere; tracked_keys is the set of s3 keys with any backup
+          history under the prefix, used by callers to distinguish
+          tracked-but-absent-at-checktime from never-tracked.
 
           {
               "/testyssmbak/88JCRX": {
@@ -381,6 +384,7 @@ class Resource:
         # Step 2: Collect all candidate versions preserving order
         # (DeleteMarkers before Versions, as in original code)
         all_versions = self._collect_all_candidate_versions(key, recurse, paginated)
+        tracked_keys = {v["Key"] for v in all_versions}
 
         # Step 3: Select version with latest event time for each key
         # Cannot rely on LastModified order - must check event times (ssmbakTime tags)
@@ -415,7 +419,7 @@ class Resource:
             versions.sort(key=lambda x: x[0], reverse=True)
             result[param_key] = versions[0][1]
 
-        return result
+        return result, tracked_keys
 
     def _get_version_body(self, name: str, versionid: str) -> str:
         """Uses s3 object resource to get the contents of the version.
