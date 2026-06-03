@@ -3,7 +3,7 @@ name = "ssmbak"
 license = "MIT"
 repository = "https://github.com/newvoll/ssmbak"
 homepage = "https://github.com/newvoll/ssmbak"
-version = "0.5.0"
+version = "0.5.1"
 description = "Event-driven SSM Param backups and point-in-time restore."
 authors = ["olmouse <olmouse@newvoll.net>"]
 readme = "README.md"
@@ -18,6 +18,7 @@ cfn-lint = "^1.40.4"
 ssmbak = "ssmbak.cli.cli:main"
 ssmbak-all = "ssmbak.cli.backup_all:main"
 ssmbak-stack = "ssmbak.cli.stack:main"
+s3bak = "ssmbak.cli.s3:main"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.1"
