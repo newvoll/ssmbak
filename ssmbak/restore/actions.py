@@ -1,10 +1,14 @@
 """Preview and restore AWS SSM params backed-up by the event-driven Lambda function.
 
-Restores SSM Parameters to their state at a given time. Preview is
-just a dry run without actual restore. Latest is always relative to
-the point in time (checktime). Works for just one key or a path with a
-bunch. You can choose whether to operate on the path recursively
-(default False).
+Restores tracked SSM Parameters to their state at a given time. "Tracked"
+means a param has at least one backup version in the configured S3 bucket;
+params with no backup history at all are not touched, even if they exist
+under a restored path. A tracked param that exists now but had no backup
+at or before checktime is treated as absent at checktime and will be deleted
+on restore. Preview is just a dry run without actual restore. Latest is
+always relative to the point in time (checktime). Works for just one key
+or a path with a bunch. You can choose whether to operate on the path
+recursively (default False).
 
 Typical usage example (note trailing slash for path/):
 
@@ -70,6 +74,9 @@ class ParamPath(Resource):
       :param checktime: the point in time for which to retrieve relative latest version
       :param recurse: A boolean to operate on all paths/keys under name/
       :param versions: A cache used for preview/restore, starts empty
+      :param tracked_keys: Set of s3 keys with any backup history under name; used to
+                           distinguish tracked-but-absent-at-checktime (delete on restore)
+                           from never-tracked (leave alone). Populated by get_versions().
     """
 
     def __init__(
@@ -96,6 +103,7 @@ class ParamPath(Resource):
         self.checktime = checktime
         self.recurse = recurse
         self.versions: dict[str, Version] = {}
+        self.tracked_keys: set[str] = set()
         super().__init__(region, bucketname)
 
     def __repr__(self):
@@ -156,16 +164,12 @@ class ParamPath(Resource):
           }
 
         """
-        if self.versions:
-            versions = self.versions
-        else:
-            versions = self._get_versions(
-                self.name,
-                self.checktime,
-                recurse=self.recurse,
-            )
-            self.versions = versions
-        return versions
+        if self.versions or self.tracked_keys:
+            return self.versions
+        all_versions = self._list_all_versions(self.name, recurse=self.recurse)
+        self.tracked_keys = {v["Key"] for v in all_versions}
+        self.versions = self._select_versions_at(all_versions, self.checktime)
+        return self.versions
 
     def preview(self) -> list[Preview]:
         """Shows what would be restored.
@@ -195,6 +199,18 @@ class ParamPath(Resource):
 
         # Fetch current SSM state to filter out unchanged parameters
         current_state = self._ssmgetpath(self.name, recurse=self.recurse)
+
+        # Conservative point-in-time: a tracked param currently in SSM but
+        # with no backup version at or before checktime is treated as absent
+        # at checktime and must be deleted on restore. Untracked params (no
+        # backup history at all) are left alone.
+        backup_names = {p["Name"] for p in previews}
+        now = datetime.now(tz=UTC)
+        for current_name in current_state:
+            if current_name in backup_names:
+                continue
+            if current_name in self.tracked_keys:
+                previews.append({"Name": current_name, "Deleted": True, "Modified": now})
 
         # Filter to only parameters that would actually change
         filtered = []
