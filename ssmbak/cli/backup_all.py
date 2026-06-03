@@ -17,9 +17,6 @@ from botocore.exceptions import ClientError, NoRegionError
 from ssmbak.backup import ssmbak
 from ssmbak.cli import helpers
 
-logger = logging.getLogger(__name__)
-
-
 parser = argparse.ArgumentParser(
     description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
 )
@@ -86,18 +83,22 @@ def main():
         bucketname = helpers.sort_bucket(args.bucket, region)
         backup(bucketname)
     except KeyboardInterrupt:
-        logger.fatal("Interrupted")
-        sys.exit(1)
+        print("Interrupted", file=sys.stderr)
+        sys.exit(130)
     except NoRegionError as e:
-        logger.fatal(e)
-        logger.fatal(
+        print(f"Error: {e}", file=sys.stderr)
+        print(
             "Specify a region 1) as an argument, "
             "2) using env var AWS_DEFAULT_REGION, or "
-            "3) region= in ~/.aws/config."
+            "3) region= in ~/.aws/config.",
+            file=sys.stderr,
         )
         sys.exit(1)
     except ClientError as e:
-        logger.fatal("%s: %s", e.response["Error"]["Code"], e.response["Error"]["Message"])
+        print(
+            f"Error: {e.response['Error']['Code']}: {e.response['Error']['Message']}",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
 

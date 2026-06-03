@@ -11,7 +11,6 @@ Three subcommands:
 
 import argparse
 import logging
-import os
 import sys
 from datetime import UTC, datetime
 from importlib.metadata import metadata, version
@@ -22,14 +21,11 @@ from prettytable import PrettyTable
 from ssmbak.cli import helpers
 from ssmbak.restore.s3 import S3Path
 
-logger = logging.getLogger(__name__)
-
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        prog=os.path.basename(__file__),
     )
     parser.add_argument(
         "command",
@@ -86,17 +82,21 @@ def main() -> None:
         else:
             _cmd_restore(s3path)
     except KeyboardInterrupt:
-        logger.fatal("Interrupted")
-        sys.exit(1)
+        print("Interrupted", file=sys.stderr)
+        sys.exit(130)
     except ClientError as e:
-        logger.fatal("%s: %s", e.response["Error"]["Code"], e.response["Error"]["Message"])
+        print(
+            f"Error: {e.response['Error']['Code']}: {e.response['Error']['Message']}",
+            file=sys.stderr,
+        )
         sys.exit(1)
     except NoRegionError as e:
-        logger.fatal(e)
-        logger.fatal(
+        print(f"Error: {e}", file=sys.stderr)
+        print(
             "Specify a region 1) as an argument, "
             "2) using env var AWS_DEFAULT_REGION, or "
-            "3) region= in ~/.aws/config."
+            "3) region= in ~/.aws/config.",
+            file=sys.stderr,
         )
         sys.exit(1)
 
