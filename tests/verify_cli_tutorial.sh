@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Verification script for README CLI Tutorial
+# Verification script for CLI Tutorial
 # Runs through tutorial commands and compares actual vs expected output
 
 set -uo pipefail
