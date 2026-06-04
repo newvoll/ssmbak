@@ -1,13 +1,8 @@
-The AWS SSM Parameter Store is simple and great for AWS config bits,
-but SSM only preserves 100 versions and maintains no record of
-deletion.
+The AWS SSM Parameter Store is simple and great for AWS config bits, but SSM only preserves 100 versions and maintains no record of deletion.
 
-To enable point-in-time restore, including deleted versions and entire
-recursive trees, we use an s3 bucket with versioning enabled as a
-backend.
+To enable point-in-time restore, including deleted versions and entire recursive trees, we use an s3 bucket with versioning enabled as a backend.
 
-This project includes all the pieces to both backup and restore SSM
-Params to a point in time.
+This project includes all the pieces to both backup and restore SSM Params to a point in time. Bonus: generic `s3bak` preview/restore/download.
 
 * Backup: Eventbridge -> SQS -> Lambda -> S3
   * launch cloudformation stack from
@@ -33,14 +28,20 @@ ssmbak-stack <SSMBAK_STACKNAME> create
 That's it. All new params will automatically be backed-up and
 available for `ssmbak` point-in-time restore via CLI or lib, like:
 
-`ssmbak preview /my/ssm/path/ 2024-06-15T17:56:58`
-`ssmbak restore /my/ssm/path/ 2024-06-15T17:56:58`
+```
+ssmbak preview /my/ssm/path/ 2024-06-15T17:56:58
+ssmbak preview /my/ssm/path/ 2024-06-15T17:56:58 -R
+ssmbak restore /my/ssm/path/ 2024-06-15T17:56:58
+```
 
 The same point-in-time machinery is exposed as `s3bak`, a standalone CLI (and `S3Path` lib class) for **any** versioned S3 bucket — not just ssmbak's. Subcommands: `preview`, `body` (download a past version to a file), `restore`. Bucket is explicit since it isn't tied to a stack:
 
-`s3bak preview my/object/key 2024-06-15T17:56:58 -b my-bucket`
-`s3bak restore my/object/key 2024-06-15T17:56:58 -b my-bucket`
-`s3bak body my/object/key 2024-06-15T17:56:58 -b my-bucket -o ./key`
+```
+SSMBAK_BUCKET=`ssmbak-stack <SSMBAK_STACKNAME> bucketname`
+s3bak preview my/object/key 2024-06-15T17:56:58 -b $SSMBAK_BUCKET
+s3bak restore my/object/key 2024-06-15T17:56:58 -b $SSMBAK_BUCKET
+s3bak body my/object/key 2024-06-15T17:56:58 -b $SSMBAK_BUCKET -o ./key
+```
 
 > You need a bunch of shady permissions to create the stack. Look for such errors if it fails.
 
